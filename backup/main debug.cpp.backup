@@ -1,0 +1,142 @@
+#include <Arduino.h>
+
+#include "Hardware.h"
+#include "RawInputs.h"
+
+Hardware hardware;
+
+constexpr uint32_t PRINT_INTERVAL_MS = 250;
+
+uint32_t lastPrintAtMs = 0;
+
+void printRawInputs(const RawInputs& raw)
+{
+    Serial.println();
+    Serial.println("=== RAW INPUTS ===");
+
+    Serial.print("Run switch pin: ");
+    Serial.println(
+        raw.runSwitchPinHigh ? "HIGH" : "LOW"
+    );
+
+    Serial.print("Polarity selector ADC: ");
+    Serial.println(
+        raw.polaritySelectorAdc
+    );
+
+    Serial.print("POS HV_ON pin: ");
+    Serial.println(
+        raw.positiveHvOnPinHigh ? "HIGH" : "LOW"
+    );
+
+    Serial.print("POS FAULT pin: ");
+    Serial.println(
+        raw.positiveFaultPinHigh ? "HIGH" : "LOW"
+    );
+
+    Serial.print("NEG HV_ON pin: ");
+    Serial.println(
+        raw.negativeHvOnPinHigh ? "HIGH" : "LOW"
+    );
+
+    Serial.print("NEG FAULT pin: ");
+    Serial.println(
+        raw.negativeFaultPinHigh ? "HIGH" : "LOW"
+    );
+
+    Serial.println("==================");
+}
+
+void setup()
+{
+    Serial.begin(115200);
+
+    hardware.begin();
+
+    /*
+     * Diagnostic mode must never energize HV.
+     */
+
+    Outputs safeOutputs;
+    safeOutputs.enableHv = false;
+
+    hardware.applyOutputs(
+        safeOutputs
+    );
+
+    Serial.println();
+    Serial.println("HV Corona Box Diagnostic Mode");
+    Serial.println("ENABLE is forced LOW");
+    Serial.println("Raw inputs will print every 250 ms");
+}
+
+void loop()
+{
+    const uint32_t now =
+        millis();
+
+    /*
+     * Explicitly keep ENABLE LOW on every loop.
+     */
+
+    Outputs safeOutputs;
+    safeOutputs.enableHv = false;
+
+    hardware.applyOutputs(
+        safeOutputs
+    );
+
+    if (
+        now - lastPrintAtMs
+        < PRINT_INTERVAL_MS
+    ) {
+        return;
+    }
+
+    lastPrintAtMs = now;
+
+    const RawInputs raw =
+        hardware.readFastInputs();
+
+    const RawSlowInputs slow =
+        hardware.readSlowInputs();
+
+    printRawInputs(raw);
+
+    Serial.println("--- SLOW INPUTS ---");
+
+    Serial.print("Timer pot ADC: ");
+    Serial.println(
+        slow.timerPotAdc
+    );
+
+    Serial.print("Voltage pot ADC: ");
+    Serial.println(
+        slow.voltagePotAdc
+    );
+
+    Serial.print("Current pot ADC: ");
+    Serial.println(
+        slow.currentPotAdc
+    );
+
+    Serial.print("POS voltage ADC: ");
+    Serial.println(
+        slow.positiveVoltageAdc
+    );
+
+    Serial.print("POS current ADC: ");
+    Serial.println(
+        slow.positiveCurrentAdc
+    );
+
+    Serial.print("NEG voltage ADC: ");
+    Serial.println(
+        slow.negativeVoltageAdc
+    );
+
+    Serial.print("NEG current ADC: ");
+    Serial.println(
+        slow.negativeCurrentAdc
+    );
+}
