@@ -51,17 +51,18 @@ DisplayFrame Display::makeFrame(const Controller& controller, const Inputs& inpu
             snprintf(frame.top, sizeof(frame.top), "IDLE       %03us", inputs.timerSeconds);
             if (controller.lastStartCheck() != StartCheck::OK && inputs.runSwitchOn) {
                 snprintf(frame.bottom, sizeof(frame.bottom), "%s", startCheckText(controller.lastStartCheck()));
-            } else if (inputs.targetPotSaturated) {
-                snprintf(frame.bottom, sizeof(frame.bottom), "TARGET SATURATED");
+
             } else if (inputs.targetVoltageOutOfRange) {
                 snprintf(frame.bottom, sizeof(frame.bottom), "OUT OF CAL RANGE");
             } else if (inputs.targetVoltageValid && inputs.targetCurrentValid) {
                 const char sign = polaritySymbol(inputs.selectedPolarity);
                 snprintf(frame.bottom, sizeof(frame.bottom),
-                         inputs.targetCurrentIsEstimated ? "%c%.1fkV I~%.1fuA" : "%c%.1fkV %.1fuA",
+                         inputs.targetVoltageIsEstimated ? "%c~%.1fkV~%.1fuA" :
+                         (inputs.targetCurrentIsEstimated ? "%c%.1fkV I~%.1fuA" : "%c%.1fkV %.1fuA"),
                          sign, inputs.targetVoltageKv, inputs.targetCurrentUa);
             } else if (inputs.targetVoltageValid) {
-                snprintf(frame.bottom, sizeof(frame.bottom), "%c%.1fkV I~--",
+                snprintf(frame.bottom, sizeof(frame.bottom),
+                         inputs.targetVoltageIsEstimated ? "%c~%.1fkV I~--" : "%c%.1fkV I~--",
                          polaritySymbol(inputs.selectedPolarity), inputs.targetVoltageKv);
             } else {
                 snprintf(frame.bottom, sizeof(frame.bottom), "%c TARGET CAL TODO", polaritySymbol(inputs.selectedPolarity));

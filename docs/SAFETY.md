@@ -26,7 +26,7 @@ Use the actual supplies' manuals and the laboratory's approved isolation, discha
 | Fault is latched and reset is deliberate | Post-fault event, final switch OFF, both HV reports OFF |
 | Supply-FAULT protection can be enabled | Supported but both enable options remain false |
 
-The 48 passing native tests verify selected software scenarios. They do not test electrical failure modes or certify all input combinations.
+The 58 passing native tests verify selected software scenarios. They do not test electrical failure modes or certify all input combinations.
 
 ## Active-high PCB signals
 
@@ -50,6 +50,6 @@ These are recorded as review work in [TODO.md](TODO.md), without silently alteri
 
 “Raw OFF immediately” means the next fast processing cycle. It does not bypass ADC acquisition or slow-path work already executing. Start/stop timeouts are 500 ms and UNKNOWN grace 100 ms, all pending real timing/noise validation. There is no configured task watchdog.
 
-Voltage-monitor calibration now reaches 29.7 kV and production rejects out-of-range readings. Pot targets are unavailable at ADC 4095 because remaining knob travel is indistinguishable. Actual current monitors remain unavailable; the I~ display is a voltage-based estimate for the recorded setup with the current limit at maximum. User-specified zero baselines do not constitute new independent measurements. Neither a display estimate nor its zero value proves de-energization or provides current protection.
+Voltage-monitor calibration now reaches 29.7 kV and production rejects out-of-range readings. At pot ADC 4095, the marked target estimate uses a valid live monitor in the clipped range with HV_ON or otherwise its calibrated midpoint. The HV-off midpoint does not resolve remaining knob travel and is not measured output. Actual current monitors remain unavailable; the I~ display is a voltage-based estimate for the recorded setup with the current limit at maximum. User-specified zero baselines do not constitute new independent measurements. Neither a display estimate nor its zero value proves de-energization or provides current protection.
 
 See [HARDWARE.md](HARDWARE.md), [CALIBRATION.md](CALIBRATION.md), and [TESTING.md](TESTING.md) for the corresponding evidence and verification tasks.

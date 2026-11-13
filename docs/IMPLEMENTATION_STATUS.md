@@ -14,7 +14,7 @@ Reviewed 13 November 2026. Source presence, owner-reported hardware behavior, pa
 | Task watchdog | Planned, not implemented | Retained explicitly |
 | Voltage target/monitor data | Integrated | Corrected workbook, separate polarities, through 29.7 kV monitor range |
 | Zero baselines | Added by owner request | All four workbook blocks and every firmware table; distinguish from additional physical measurements |
-| Pot ADC 4095 handling | Implemented | Both observations retained in Excel; targets invalid/saturated at 4095; monitor-based RUNNING readback remains distinguishable |
+| Pot ADC 4095 handling | Implemented | Both observations retained in Excel; targets marked ~ at 4095 (live monitor or calibrated midpoint); monitor-based RUNNING readback remains distinguishable |
 | Expected IDLE current | Implemented estimate | Voltage-pot ADC, selected polarity, I~ label |
 | RUNNING current | Implemented estimate | Active supply's voltage-monitor ADC; I~ label; assumes same geometry/load and current limit at maximum |
 | Actual current feedback | Unavailable; set aside for current setup | ADC_0db trial still read zero on both; arrays contain one zero baseline each; no hardware cause independently proved |
@@ -24,7 +24,7 @@ Reviewed 13 November 2026. Source presence, owner-reported hardware behavior, pa
 | Shared target pots | Correct model | One voltage pot, one current pot; not separate pots per supply |
 | Fast/slow averaging | Implemented | 250 selector / 100 per slow channel; PCB latency/noise verification remains |
 | Firmware environments | Four present and built | normal, diagnostic, calibration_voltage, calibration_current |
-| Host tests | 48 pass | 30 controller + 18 InputProcessor; not bench validation |
+| Host tests | 58 pass | 30 controller + 28 InputProcessor; not bench validation |
 | Optional app-file split/version pinning | Not required for current functionality | Optional maintenance/release improvements |
 
 Remaining work is centralized in [TODO.md](TODO.md). Direct current readback was replaced for this workflow, not silently relabeled as a real measurement. Full hardware commissioning and R01–R04 remain open despite successful builds/tests.

@@ -46,10 +46,10 @@ These are the next firmware review items to address; they are not cable-detectio
 | T05 15.3 kV ceiling | Replaced with measured voltage data through 29.7 kV and strict range handling |
 | R05 displayed calibration validity | Production range/saturation flags implemented; zero baselines explicit; unavailable estimates do not silently clamp |
 | D01 active-low comment / obsolete feature-flag instructions | HV_ON comment corrected; legacy README_TODO replaced with a redirect |
-| D05 fresh firmware build evidence | All four firmware environments build; 48 native tests pass. Dependency version pinning remains optional release work |
+| D05 fresh firmware build evidence | All four firmware environments build; 58 native tests pass. Dependency version pinning remains optional release work |
 | Combined calibration CSV | Replaced by voltage/current modes, each with three readable ADC labels |
 | Independent positive/negative target pots | Corrected: pots are shared; monitor channels and response curves are polarity-specific |
-| Treating two ADC-4095 observations as distinct pot positions | Discarded as unobservable; preserve both in Excel, one lookup key, explicit saturation display |
+| Treating two ADC-4095 observations as distinct pot positions | Discarded as unobservable; preserve both in Excel, one lookup key, marked monitor/midpoint estimate |
 | Missing STARTING dispatcher, interlock resume, abort/result semantics, switch debounce race | Corrected in current firmware; retain regressions |
 | GPIO25/26 assignment mismatch | Owner corrected Pins.h: positive current GPIO26, negative voltage GPIO25 |
 

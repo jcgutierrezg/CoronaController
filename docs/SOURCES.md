@@ -22,7 +22,7 @@ Conversation messages were used as evidence of design and observations, not as l
 
 Read all 15 project `.h`/`.cpp` files under src/lib/test, plus `platformio.ini` and `README_TODO.txt`. The source-specific descriptions in these docs refer to those files and their named functions. The original backup file and cached external libraries are not treated as current application implementation.
 
-The latest PlatformIO native run passed **30 controller + 18 InputProcessor = 48 tests**, with zero failed/ignored. All four ESP32 environments built. Eight input regressions were added during calibration integration. The earlier direct-host 40-test result is superseded. No assistant upload or physical energized measurement was performed. See [TESTING.md](TESTING.md).
+The latest PlatformIO native run passed **30 controller + 28 InputProcessor = 58 tests**, with zero failed/ignored. All four ESP32 environments built. Eighteen input regressions were added during calibration and saturated-target integration. The earlier direct-host 40-test result is superseded. No assistant upload or physical energized measurement was performed. See [TESTING.md](TESTING.md).
 
 Hardware behavior labeled reported comes from the owner's statements or accessible historical consolidation. Calibration.xlsx was supplied by the owner and inspected; the corrected value and every measurement were preserved while adding requested zero baselines. No oscilloscope traces, PCB schematics or supply-specific manuals were examined. Configured ADC windows and table contents are source facts; their empirical accuracy is a separate question.
 
@@ -48,20 +48,20 @@ The following SHA-256 fingerprints identify the inspected files independently of
 | File | SHA-256 |
 |---|---|
 | `Calibration.xlsx` | `e1b2defa17fec134cb09d616404abd9721071622e4a1c25cae768fd3ab525079` |
-| `README_TODO.txt` | `18ff9215e329f624bfce73f4f62e78263d2714ed75d5af461465353012be3139` |
+| `README_TODO.txt` | `27077344d0530f5ef99bb10cbfe52985237e43cc1b365488e7f4a7c6dd1a18c8` |
 | `lib/Controller/Controller.cpp` | `d7a93e1f05975961ccfefcb3ed78ae71aa3f88f59d3235d4f20c90216a1b1259` |
 | `lib/Controller/Controller.h` | `7b3b238cae7880bbeca03d03f27325611107c6ca1d7c85455a39ad4d5be4d7a2` |
-| `lib/Controller/Types.h` | `e70536e7ab0368ea9d06c05c7577644175eb5c42500f2044d02e8345206f2b4e` |
-| `lib/Display/Display.cpp` | `baaec842523428232ac2854c8fa769a4972fedb0513b5188de6dc18345fb91f5` |
+| `lib/Controller/Types.h` | `be60bb8c4a20b90126fd8fe3c2adc0f346e1c4e8438d49dcbd23315ab7addbbd` |
+| `lib/Display/Display.cpp` | `8e49124195759440bac0d42989abb2cd2d4d976c6de56cd01ad42e3b68c1a7d9` |
 | `lib/Display/Display.h` | `8de7f58ae655dffaf1d6382afb53345f523129b4561850bd3f368150530c2335` |
 | `lib/Hardware/Hardware.cpp` | `90767ea39256083a2892fe8032dd419fe3bb2f5d8421dce38a626f335469678a` |
 | `lib/Hardware/Hardware.h` | `bc2bba81a8e39b7013bff70c4bf664b822b5c6bf4897689afe44704021438c9b` |
 | `lib/Hardware/Pins.h` | `7c7da90fd04f8bc4b1250480f8d8a66b6654cf10ca3fea3c50afde6ee8d92c0f` |
-| `lib/InputProcessor/InputProcessor.cpp` | `40aefeda3d1e8c112fb2349a802df80185a2fdb29fc6365c51e7e047c3be92ca` |
-| `lib/InputProcessor/InputProcessor.h` | `ec888e65694857b75b362ea90815857c719c7fc6a4c6957aecbde6802cde109e` |
+| `lib/InputProcessor/InputProcessor.cpp` | `53a4c3b7cc53275a9bcec1cb3ead650bcdf58f42af19a00679d84d8ee5858015` |
+| `lib/InputProcessor/InputProcessor.h` | `d367a97de0d35b26226b229089e90d3d0e75af429c1ceb36b01b8fa8320a0297` |
 | `lib/InputProcessor/RawInputs.h` | `ad675405515d288228e49cfa47a9c6735d183481bf66e79c91d0304b25f00807` |
 | `lib/InputProcessor/RawSlowInputs.h` | `88f2860d468304c0992e7bb31a48bd1023e8f42db495b865fe01f99c1be2b98f` |
 | `platformio.ini` | `6add49ccf233cbbdca75f61fd7f207265e8c35a307ead60f9de9d7686f8c8adc` |
-| `src/main.cpp` | `238a4ab219381c07ad65f0664868cfa586fea52e995506ade5d213d2579ad751` |
+| `src/main.cpp` | `ddca00014f5a7a83fece9d599e5a04a52a1ac040cd1bcd8eaa3478a38115e79f` |
 | `test/test_controller/test_controller.cpp` | `8674705ad8aa70117be54184dc70991393ea0433c271c78a939a23c4f689ade3` |
-| `test/test_input_processor/test_input_processor.cpp` | `279071c6da7c9e3cff171e380e6d911359fe9f1b71b7abf0d6729231abacd922` |
+| `test/test_input_processor/test_input_processor.cpp` | `78c891d94857f99129f05fa2734dfcdbc799e60816ca04b97b89d5471a89ece8` |

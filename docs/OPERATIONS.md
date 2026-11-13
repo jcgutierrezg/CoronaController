@@ -6,7 +6,7 @@ This describes the firmware's operator interface after approved hardware commiss
 
 With the maintained switch OFF, startup checks for an ON switch or pre-existing HV. A closed interlock leads to cyan IDLE; an open interlock leads to blue INTERLOCK_OPEN. Starting with the switch already ON latches FAULT rather than treating power-up as a start request.
 
-In IDLE, the timer pot sets 5–120 seconds. The displayed voltage target and I~ expected current now use the empirical workbook curves. At voltage-pot ADC 4095, TARGET SATURATED indicates the remaining physical travel is not distinguishable. Validated operation requires a known selector polarity and no pre-existing HV; cable verification is outside the owner-confirmed scope.
+In IDLE, the timer pot sets 5–120 seconds. The displayed voltage target and I~ expected current now use the empirical workbook curves. At voltage-pot ADC 4095, a ~ voltage target estimates the clipped range. With HV off, it is the calibrated midpoint rather than a detected physical knob position; when valid HV_ON monitor feedback is available in that range, it follows the monitor. Validated operation requires a known selector polarity and no pre-existing HV; cable verification is outside the owner-confirmed scope.
 
 A new debounced ON event requests STARTING. During validation enable is OFF. After acceptance the screen says WAIT FOR HV and the controller commands enable. RUNNING and the treatment timer begin only when the selected supply reports HV_ON. Failure to confirm within the current 500 ms timeout faults.
 

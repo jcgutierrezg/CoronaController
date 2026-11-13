@@ -163,7 +163,7 @@ constexpr uint32_t DEBUG_PERIOD_MS = 100;
 }   
 
 // Empirical data: Calibration.xlsx, sheet 13-11-2026. Voltage in kV; current in uA.
-// Target curves retain only the FIRST 4095 row; saturated targets are not displayed.
+// Target curves retain the FIRST 4095 row; the voltage-monitor curve estimates the clipped range.
 // Current estimates assume the recorded geometry/load and current-limit pot at maximum.
 // Zero baselines requested by the owner; duplicate ADC keys are excluded.
 
@@ -366,6 +366,11 @@ InputCalibration makeInputCalibration() {
     calibration.timer.secondsMaximum = 120;
 
     calibration.voltagePotSaturationAdc = 4095;
+    calibration.estimateSaturatedTargets = true;
+    // Small endpoint mismatch between separate full-output calibration sweeps:
+    // POS current ends at 2801 vs voltage 2804; NEG 2807 vs 2809.
+    // Hold the final current estimate within 8 counts, never beyond voltage calibration.
+    calibration.currentEstimateUpperToleranceAdc = 8;
     calibration.requireVoltageCalibrationRange = true;
 
     calibration.positiveVoltageTarget.points = POSITIVE_VOLTAGE_TARGET;

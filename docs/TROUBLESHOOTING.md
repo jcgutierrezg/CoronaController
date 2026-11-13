@@ -42,8 +42,12 @@ An earlier AC-output SSR used in a DC enable circuit produced this behavior. The
 
 The old voltage ceiling and target placeholders were superseded by the empirical workbook through 29.7 kV. Both current monitors continued reading zero after the lower-attenuation trial. Direct current readback was set aside for this setup; I~ is now a voltage-based estimate. Do not put voltage-monitor-to-current pairs into actual current-monitor tables.
 
-TARGET SATURATED at pot ADC 4095 is deliberate, not a missing lookup point. Two physical positions share that ADC code. RUNNING can still use the differing voltage-monitor ADC readings. See [CALIBRATION.md](CALIBRATION.md).
+The former TARGET SATURATED message has been replaced by a ~ target estimate at ADC 4095. Two physical positions still share that code. The display follows a valid selected-supply monitor in the clipped range with HV_ON; otherwise it shows a fixed calibrated midpoint. RUNNING still uses actual voltage-monitor readback and keeps measured validity separate. See [CALIBRATION.md](CALIBRATION.md).
 
 ## Compiler/tests pass but IntelliSense shows red highlights
 
 This was previously reported after PlatformIO migration. Select the relevant environment, rebuild the PlatformIO IntelliSense index, reset the C/C++ IntelliSense database if needed, and keep backup files outside active source folders. Compiler diagnostics and actual test failures take precedence over stale editor indexing; do not dismiss a real build failure as an indexing problem. Use native Test for host tests and nodemcu-32s Build for firmware.
+
+## Current flickers to -- at full output
+
+A specific code/data boundary mismatch was found: current calibration ends at ADC 2801/2807 while voltage calibration extends to 2804/2809. Production now holds the last current estimate across that small endpoint gap, with an 8-count maximum tolerance and an independent voltage-range cap. Upload the rebuilt firmware to test on the device. If the voltage itself leaves its calibrated range, it still reports out-of-range; this fix does not mask larger excursions or confirm the actual hardware noise amplitude.

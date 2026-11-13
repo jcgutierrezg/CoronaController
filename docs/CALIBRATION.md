@@ -21,7 +21,7 @@ The actual POSITIVE_CURRENT_MONITOR and NEGATIVE_CURRENT_MONITOR arrays each hav
 
 ## Saturated pot readings
 
-Excel retains both 4095 rows: first ADC saturation and physical knob maximum. A lookup cannot distinguish the positions from that ADC code. Firmware target tables include the first 4095 point only, keeping strictly increasing unique keys. At voltagePotAdc >= 4095, target values are marked unavailable and IDLE displays TARGET SATURATED rather than asserting a single output.
+Excel retains both 4095 rows: first ADC saturation and physical knob maximum. A lookup cannot distinguish the positions from that ADC code. Firmware target tables include the first 4095 point only, keeping strictly increasing unique keys. At voltagePotAdc >= 4095, production estimates the target using the voltage-monitor calibration and marks it with ~. A valid live monitor in the clipped voltage range is used when the selected supply reports HV_ON. Otherwise the estimate is the calibrated range midpoint: positive 28.7–29.7 kV gives about 29.2 kV; negative 28.2–29.7 kV gives about 29.0 kV. The HV-off value is a range assumption, not knowledge of physical knob position. Current is estimated from the corresponding voltage-monitor ADC, preserving the same curve relationship.
 
 Both end-position observations are retained in voltage-monitor-based tables because their monitor ADC readings are distinct. Actual voltage readback reaches 29.7 kV for each supply in the new data. Positive and negative running current estimates extend through 15.9 µA and 22.6 µA respectively, at their last recorded voltage-monitor points.
 
@@ -33,9 +33,9 @@ The current-limit pot must stay at the maximum used during collection, with the 
 
 ## Interpolation, range and zero
 
-Values are linearly interpolated between recorded points, including the requested zero baseline. No extrapolation is used for current estimates. Out-of-range estimates show I~-- when voltage remains available. Production enables strict voltage calibration ranges, so voltage outside its recorded table is unavailable instead of silently clamped. IDLE shows OUT OF CAL RANGE for an out-of-range voltage target, and RUNNING shows V OUT OF RANGE for voltage readback outside calibration.
+Values are linearly interpolated between recorded points, including the requested zero baseline. No extrapolation is used for current estimates. Out-of-range current estimates show I~-- when voltage remains available. A saturated voltage target estimate may remain available via its midpoint fallback even when the measured voltage is out of range; measured-voltage validity is kept separate. Production enables strict voltage calibration ranges, so voltage outside its recorded table is unavailable instead of silently clamped. IDLE shows OUT OF CAL RANGE for an out-of-range voltage target, and RUNNING shows V OUT OF RANGE for voltage readback outside calibration.
 
-Zero ADC now returns zero voltage and estimated current. Target-pot saturation still overrides target availability at 4095. Actual current monitor validity remains false until each monitor table has at least two entries. The generic InputProcessor retains its legacy clamp behavior unless requireVoltageCalibrationRange is enabled; production enables it.
+Zero ADC now returns zero voltage and estimated current. The internal saturation flag still identifies 4095; estimateSaturatedTargets enables the marked midpoint/live-monitor fallback instead of invalidating its target. Actual current monitor validity remains false until each monitor table has at least two entries. The generic InputProcessor retains its legacy clamp behavior unless requireVoltageCalibrationRange is enabled; production enables it.
 
 ## Acquisition and other calibration
 
@@ -46,3 +46,7 @@ Current selector windows remain inclusive: open 0–200, positive 800–1600, ne
 Use [LIVE_CALIBRATION.md](LIVE_CALIBRATION.md) for the two simple serial calibration modes. Keep data separate by polarity and record changes in setup. Rebuild and upload after changing tables. The workbook was updated and checked for preserved measurement values; no new physical measurements were performed by the assistant.
 
 Workbook SHA-256 at integration: e1b2defa17fec134cb09d616404abd9721071622e4a1c25cae768fd3ab525079
+
+## Current-estimate endpoint stability
+
+The positive current sweep ends at voltage ADC 2801 while voltage calibration ends at 2804; negative ends at 2807 versus 2809. Strict current range checking caused I~-- to appear while voltage was still valid. Production now sets currentEstimateUpperToleranceAdc to 8. A reading just above the current table endpoint is allowed only within that tolerance AND within the corresponding voltage calibration range. The existing interpolation clamps to the last current value (15.9 µA positive, 22.6 µA negative), rather than extrapolating. For the current tables the voltage cap limits this hold to 3 and 2 counts, respectively. Beyond those limits, normal unavailable/out-of-range behavior remains. This applies to RUNNING estimates and saturated live-target current estimates; it does not change actual current sensing or voltage validity.

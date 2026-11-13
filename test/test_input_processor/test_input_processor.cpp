@@ -295,6 +295,146 @@ void test_user_zero_baseline_produces_zero_voltage_and_estimated_current() {
     TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, in.estimatedCurrentUa);
 }
 
+
+const CalibrationPoint SAT_POS_TARGET[] = {CalibrationPoint(0, 0.0f), CalibrationPoint(4095, 28.7f)};
+const CalibrationPoint SAT_NEG_TARGET[] = {CalibrationPoint(0, 0.0f), CalibrationPoint(4095, 28.2f)};
+const CalibrationPoint SAT_POS_MONITOR[] = {CalibrationPoint(0, 0.0f), CalibrationPoint(2696, 28.7f), CalibrationPoint(2804, 29.7f)};
+const CalibrationPoint SAT_NEG_MONITOR[] = {CalibrationPoint(0, 0.0f), CalibrationPoint(2653, 28.2f), CalibrationPoint(2809, 29.7f)};
+InputCalibration saturatedEstimateCalibration() {
+    InputCalibration c = estimateCalibration(); c.estimateSaturatedTargets = true;
+    c.requireVoltageCalibrationRange = true;
+    c.positiveVoltageTarget.points = SAT_POS_TARGET; c.positiveVoltageTarget.count = 2;
+    c.negativeVoltageTarget.points = SAT_NEG_TARGET; c.negativeVoltageTarget.count = 2;
+    c.positiveVoltageMonitor.points = SAT_POS_MONITOR; c.positiveVoltageMonitor.count = 3;
+    c.negativeVoltageMonitor.points = SAT_NEG_MONITOR; c.negativeVoltageMonitor.count = 3;
+    return c;
+}
+
+void test_saturated_idle_target_uses_calibrated_midpoint_not_zero_monitor() {
+    InputProcessor p(saturatedEstimateCalibration()); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::POSITIVE; raw.voltagePotAdc = 4095;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_TRUE(in.targetPotSaturated); TEST_ASSERT_TRUE(in.targetVoltageValid);
+    TEST_ASSERT_TRUE(in.targetVoltageIsEstimated); TEST_ASSERT_TRUE(in.targetCurrentIsEstimated);
+    TEST_ASSERT_TRUE(in.targetCurrentValid);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 29.2f, in.targetVoltageKv);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 14.1f + 104.0f / 155.0f * 1.8f, in.targetCurrentUa);
+    TEST_ASSERT_FALSE(in.measuredCurrentValid);
+}
+
+void test_saturated_positive_target_follows_live_monitor_with_hv_on() {
+    InputProcessor p(saturatedEstimateCalibration()); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::POSITIVE; in.positiveSupply.hvOn = true;
+    raw.voltagePotAdc = 4095; raw.positiveVoltageAdc = 2696;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 28.7f, in.targetVoltageKv);
+    raw.positiveVoltageAdc = 2804;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 29.7f, in.targetVoltageKv);
+    TEST_ASSERT_TRUE(in.targetVoltageIsEstimated);
+    // Do not extrapolate the current estimate beyond its final measured ADC.
+    TEST_ASSERT_FALSE(in.targetCurrentValid);
+}
+
+void test_negative_saturated_target_uses_negative_curve_and_supply() {
+    InputProcessor p(saturatedEstimateCalibration()); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::NEGATIVE; raw.voltagePotAdc = 4095;
+    raw.positiveVoltageAdc = 2804; in.positiveSupply.hvOn = true;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 28.95f, in.targetVoltageKv);
+    in.negativeSupply.hvOn = true; raw.negativeVoltageAdc = 2809;
+    p.updateSlow(raw, in, Polarity::NEGATIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 29.7f, in.targetVoltageKv);
+}
+
+void test_invalid_or_ramping_monitor_does_not_replace_saturated_midpoint() {
+    InputProcessor p(saturatedEstimateCalibration()); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::POSITIVE; in.positiveSupply.hvOn = true;
+    raw.voltagePotAdc = 4095; raw.positiveVoltageAdc = 100;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 29.2f, in.targetVoltageKv);
+    raw.positiveVoltageAdc = 4095;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FLOAT_WITHIN(0.01f, 29.2f, in.targetVoltageKv);
+    TEST_ASSERT_FALSE(in.measuredVoltageValid);
+    TEST_ASSERT_TRUE(in.measuredVoltageOutOfRange);
+}
+
+void test_unsaturated_target_clears_estimate_marker() {
+    InputProcessor p(saturatedEstimateCalibration()); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::POSITIVE; raw.voltagePotAdc = 4095;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_TRUE(in.targetVoltageIsEstimated);
+    raw.voltagePotAdc = 4094;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FALSE(in.targetPotSaturated); TEST_ASSERT_FALSE(in.targetVoltageIsEstimated);
+    TEST_ASSERT_TRUE(in.targetVoltageValid);
+}
+
+void test_unknown_polarity_or_missing_monitor_does_not_invent_saturated_target() {
+    InputCalibration c = saturatedEstimateCalibration(); c.positiveVoltageMonitor = LookupTable{};
+    InputProcessor p(c); Inputs in; RawSlowInputs raw; raw.voltagePotAdc = 4095;
+    in.selectedPolarity = Polarity::POSITIVE;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FALSE(in.targetVoltageValid); TEST_ASSERT_FALSE(in.targetCurrentValid);
+    in.selectedPolarity = Polarity::UNKNOWN;
+    p.updateSlow(raw, in, Polarity::UNKNOWN);
+    TEST_ASSERT_FALSE(in.targetVoltageValid); TEST_ASSERT_FALSE(in.targetVoltageIsEstimated);
+}
+
+
+void test_current_endpoint_gap_holds_last_value_for_both_polarities() {
+    InputCalibration c = saturatedEstimateCalibration(); c.currentEstimateUpperToleranceAdc = 8;
+    InputProcessor p(c); Inputs in; RawSlowInputs raw;
+    for (uint16_t adc = 2801; adc <= 2804; ++adc) {
+        raw.positiveVoltageAdc = adc;
+        p.updateSlow(raw, in, Polarity::POSITIVE);
+        TEST_ASSERT_TRUE(in.measuredVoltageValid); TEST_ASSERT_TRUE(in.estimatedCurrentValid);
+        TEST_ASSERT_FLOAT_WITHIN(0.001f, 15.9f, in.estimatedCurrentUa);
+        TEST_ASSERT_FALSE(in.measuredCurrentValid);
+    }
+    for (uint16_t adc = 2807; adc <= 2809; ++adc) {
+        raw.negativeVoltageAdc = adc;
+        p.updateSlow(raw, in, Polarity::NEGATIVE);
+        TEST_ASSERT_TRUE(in.measuredVoltageValid); TEST_ASSERT_TRUE(in.estimatedCurrentValid);
+        TEST_ASSERT_FLOAT_WITHIN(0.001f, 22.6f, in.estimatedCurrentUa);
+    }
+}
+
+void test_endpoint_hold_stops_at_voltage_calibration_limit() {
+    InputCalibration c = saturatedEstimateCalibration(); c.currentEstimateUpperToleranceAdc = 8;
+    InputProcessor p(c); Inputs in; RawSlowInputs raw;
+    raw.positiveVoltageAdc = 2805;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_FALSE(in.estimatedCurrentValid); TEST_ASSERT_TRUE(in.measuredVoltageOutOfRange);
+    raw.negativeVoltageAdc = 2810;
+    p.updateSlow(raw, in, Polarity::NEGATIVE);
+    TEST_ASSERT_FALSE(in.estimatedCurrentValid); TEST_ASSERT_TRUE(in.measuredVoltageOutOfRange);
+}
+
+void test_endpoint_hold_is_bounded_even_with_wider_voltage_table() {
+    const CalibrationPoint voltage[] = {CalibrationPoint(0, 0.0f), CalibrationPoint(3000, 30.0f)};
+    InputCalibration c = saturatedEstimateCalibration(); c.currentEstimateUpperToleranceAdc = 8;
+    c.positiveVoltageMonitor.points = voltage; c.positiveVoltageMonitor.count = 2;
+    InputProcessor p(c); Inputs in; RawSlowInputs raw;
+    raw.positiveVoltageAdc = 2809;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_TRUE(in.estimatedCurrentValid);
+    raw.positiveVoltageAdc = 2810;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_TRUE(in.measuredVoltageValid); TEST_ASSERT_FALSE(in.estimatedCurrentValid);
+}
+
+void test_saturated_live_target_uses_same_current_endpoint_hold() {
+    InputCalibration c = saturatedEstimateCalibration(); c.currentEstimateUpperToleranceAdc = 8;
+    InputProcessor p(c); Inputs in; RawSlowInputs raw;
+    in.selectedPolarity = Polarity::POSITIVE; in.positiveSupply.hvOn = true;
+    raw.voltagePotAdc = 4095; raw.positiveVoltageAdc = 2804;
+    p.updateSlow(raw, in, Polarity::POSITIVE);
+    TEST_ASSERT_TRUE(in.targetCurrentValid); TEST_ASSERT_TRUE(in.targetCurrentIsEstimated);
+    TEST_ASSERT_FLOAT_WITHIN(0.001f, 15.9f, in.targetCurrentUa);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_selector_positive_negative_interlock_and_gap);
@@ -315,5 +455,15 @@ int main() {
     RUN_TEST(test_actual_current_measurement_remains_separate_from_estimate);
     RUN_TEST(test_strict_voltage_ranges_do_not_invent_unmeasured_zero_points);
     RUN_TEST(test_user_zero_baseline_produces_zero_voltage_and_estimated_current);
+    RUN_TEST(test_saturated_idle_target_uses_calibrated_midpoint_not_zero_monitor);
+    RUN_TEST(test_saturated_positive_target_follows_live_monitor_with_hv_on);
+    RUN_TEST(test_negative_saturated_target_uses_negative_curve_and_supply);
+    RUN_TEST(test_invalid_or_ramping_monitor_does_not_replace_saturated_midpoint);
+    RUN_TEST(test_unsaturated_target_clears_estimate_marker);
+    RUN_TEST(test_unknown_polarity_or_missing_monitor_does_not_invent_saturated_target);
+    RUN_TEST(test_current_endpoint_gap_holds_last_value_for_both_polarities);
+    RUN_TEST(test_endpoint_hold_stops_at_voltage_calibration_limit);
+    RUN_TEST(test_endpoint_hold_is_bounded_even_with_wider_voltage_table);
+    RUN_TEST(test_saturated_live_target_uses_same_current_endpoint_hold);
     return UNITY_END();
 }

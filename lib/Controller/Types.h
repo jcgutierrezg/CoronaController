@@ -79,6 +79,7 @@ struct Inputs {
     bool measuredCurrentValid = false;
     bool estimatedCurrentValid = false;
     bool targetCurrentIsEstimated = false;
+    bool targetVoltageIsEstimated = false;
     bool targetPotSaturated = false;
     bool targetVoltageOutOfRange = false;
     bool measuredVoltageOutOfRange = false;

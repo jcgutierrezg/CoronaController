@@ -2,7 +2,7 @@
 
 ## Results for this documentation snapshot
 
-On 13 November 2026, after empirical calibration integration and zero baselines, PlatformIO native tests passed **48/48**: 30 controller tests and 18 InputProcessor tests, zero failures/ignored. The input suite includes eight new regressions for current estimates, saturation, range handling and zero behavior.
+On 13 November 2026, after empirical calibration integration and zero baselines, PlatformIO native tests passed **58/58**: 30 controller tests and 28 InputProcessor tests, zero failures/ignored. The input suite includes eighteen new regressions for current estimates, saturation, range handling and zero behavior.
 
 All four ESP32 environments built successfully: nodemcu-32s, diagnostic, calibration_voltage, calibration_current. Observed build dependencies: Espressif32 platform 7.1.0; Arduino framework package 3.20017.241212 (Arduino core 2.0.17); Xtensa toolchain 8.4.0+2021r2-patch5; Grove LCD RGB Backlight 1.0.2 at dbd5674. Configuration remains unpinned. Builds/tests do not establish live GPIO/LCD/physical safety performance. No assistant upload or energized measurement was performed.
 
@@ -87,3 +87,7 @@ Record firmware/source hashes, PCB revision, instrumentation, expected result, a
 ## Empirical integration regressions
 
 New InputProcessor regressions cover voltage-pot-based expected current independent of current-pot position, distinct RUNNING estimates with the pot saturated at 4095, negative polarity selection/interpolation, unavailable out-of-range estimates, saturation affecting targets only, separation from actual current feedback, strict voltage ranges without invented baseline points, and the owner-requested zero baseline. The no-baseline synthetic fixture remains a test of range handling; production tables now include zero.
+
+Six later saturated-target regressions cover the calibrated HV-off midpoint, live monitor tracking, polarity/supply isolation, rejection of ramping/out-of-range monitor values for target tracking, reset of the voltage-estimate marker below saturation, and unavailable estimates when required calibration/polarity is missing. The older saturation-invalidates-targets test covers the generic opt-out configuration; production now enables estimateSaturatedTargets.
+
+Four endpoint-hold regressions cover both polarity endpoint gaps, the voltage calibration cap, the configurable tolerance cap even with a wider voltage table, and consistent saturated live-target current handling. Earlier strict-endpoint fixtures leave the tolerance at its default 0.

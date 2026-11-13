@@ -58,10 +58,12 @@ Start rejection text covers door open, unknown polarity, and positive/negative H
 
 ## Presentation limitations
 
-Active targets and voltage readback now use empirical data. Production invalidates out-of-range voltage and saturated targets. Actual current readback remains unavailable; marked I~ estimates replace it for the current workflow, and I~-- marks an unavailable estimate. These readouts are not independent protection measurements. See [CALIBRATION.md](CALIBRATION.md).
+Active targets and voltage readback now use empirical data. Production invalidates out-of-range measured voltage; saturated targets now use a marked approximate fallback. Actual current readback remains unavailable; marked I~ estimates replace it for the current workflow, and I~-- marks an unavailable estimate. These readouts are not independent protection measurements. See [CALIBRATION.md](CALIBRATION.md).
 
 The display consumes controller state; it never grants relay permission. A green screen or an HV_OFF input is not a substitute for the laboratory's physical discharge/verification procedure.
 
 ## Updated calibration presentation
 
-IDLE uses `I~` for voltage-pot-based expected current. At ADC 4095 it displays `TARGET SATURATED`; voltage outside calibration shows `OUT OF CAL RANGE`. RUNNING prefers measured current, otherwise shows voltage-monitor-based estimated current using `I~` (for example `+29.7kV I~22.6uA`, 16 characters). Missing/out-of-range current estimates use `I~--`; out-of-range voltage shows `V OUT OF RANGE`. These estimates assume the same setup and maximum current-limit setting.
+IDLE uses `I~` for voltage-pot-based expected current. At ADC 4095 it displays an approximate target, for example `+~29.2kV~15.3uA`, using a live in-range monitor with HV_ON or otherwise the calibrated clipped-range midpoint; voltage outside calibration shows `OUT OF CAL RANGE`. RUNNING prefers measured current, otherwise shows voltage-monitor-based estimated current using `I~` (for example `+29.7kV I~22.6uA`, 16 characters). Missing/out-of-range current estimates use `I~--`; out-of-range voltage shows `V OUT OF RANGE`. These estimates assume the same setup and maximum current-limit setting.
+
+At full output, a small calibrated-endpoint gap now holds the final I~ value instead of alternating with --. Values beyond the bounded hold/voltage range remain unavailable. See CALIBRATION.md.

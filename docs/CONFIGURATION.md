@@ -83,6 +83,8 @@ Use `pio test -e native` for host tests. A native firmware Build is not the test
 
 ## Empirical calibration integration
 
-Production now assigns separate voltage-pot-to-current target-estimate and voltage-monitor-to-current run-estimate tables. `voltagePotSaturationAdc = 4095` marks targets unavailable at saturation; `requireVoltageCalibrationRange = true` rejects voltage readings outside the recorded range. `estimatedCurrentValid` is distinct from `measuredCurrentValid`, and the LCD prefers measured current when available. See [CALIBRATION.md](CALIBRATION.md) for the active workbook data and range policy.
+Production now assigns separate voltage-pot-to-current target-estimate and voltage-monitor-to-current run-estimate tables. `voltagePotSaturationAdc = 4095` detects saturation and `estimateSaturatedTargets = true` enables a marked voltage-monitor-based estimate (live in-range HV_ON feedback or an HV-off calibrated midpoint); `requireVoltageCalibrationRange = true` rejects voltage readings outside the recorded range. `estimatedCurrentValid` is distinct from `measuredCurrentValid`, and the LCD prefers measured current when available. See [CALIBRATION.md](CALIBRATION.md) for the active workbook data and range policy.
 
 Cable detection is outside current scope by explicit owner decision; no cable feature flag needs enabling. FAULT handling and watchdog remain planned. See [TODO.md](TODO.md).
+
+`currentEstimateUpperToleranceAdc = 8` permits a bounded upper-end current-estimate hold, additionally capped by the voltage-monitor calibration range. The default 0 preserves strict behavior for generic configurations. No current extrapolation is performed.

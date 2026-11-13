@@ -30,7 +30,7 @@ Use the laboratory measurement procedure described in [SAFETY.md](SAFETY.md). On
 
 Target tables are polarity-specific because the resulting output can differ between supplies, even though each target pot is shared. Use monitor ADC for monitor calibration and pot ADC for target calibration. Enter points as CalibrationPoint(adcCount, measuredMagnitude), sorted by increasing ADC with no duplicates. Use measured magnitudes in kV or µA, not existing converted LCD readouts.
 
-The actual current-monitor arrays have a user-requested zero baseline only; they remain unavailable until additional current-monitor calibration points exist. The workbook voltage data and separate voltage-based estimated-current tables are now integrated. Both 4095 rows are retained in Excel; target output is marked saturated at that ADC code. See [CALIBRATION.md](CALIBRATION.md) for interpolation, estimates, and range handling.
+The actual current-monitor arrays have a user-requested zero baseline only; they remain unavailable until additional current-monitor calibration points exist. The workbook voltage data and separate voltage-based estimated-current tables are now integrated. Both 4095 rows are retained in Excel; the internal saturation flag remains, but the normal display now shows a ~ target estimate at that ADC code (live monitor when available, otherwise the calibrated midpoint). See [CALIBRATION.md](CALIBRATION.md) for interpolation, estimates, and range handling.
 
 The firmware does not insert measurements into the tables automatically or bypass normal treatment timing.
 

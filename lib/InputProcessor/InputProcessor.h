@@ -60,6 +60,8 @@ struct InputCalibration {
     LookupTable negativeCurrentEstimate;
     uint16_t voltagePotSaturationAdc = 0; // zero disables saturation handling
     bool requireVoltageCalibrationRange = false;
+    bool estimateSaturatedTargets = false;
+    uint16_t currentEstimateUpperToleranceAdc = 0; // endpoint hold; zero keeps strict range
 
     LookupTable positiveVoltageMonitor;
     LookupTable negativeVoltageMonitor;
@@ -94,5 +96,7 @@ private:
     float interpolateCalibration(uint16_t adc, const LookupTable& table) const;
     static bool tableAvailable(const LookupTable& table);
     static bool tableCovers(uint16_t adc, const LookupTable& table);
+    uint16_t adcForCalibratedValue(float value, const LookupTable& table) const;
+    bool currentEstimateCovers(uint16_t adc, const LookupTable& estimate, const LookupTable& voltage) const;
     static bool decodeDigitalSignal(bool pinHigh, bool activeLow);
 };

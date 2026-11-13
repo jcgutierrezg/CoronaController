@@ -32,7 +32,7 @@ See [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for the evidence m
 
 The raw/debounced switch race fix is implemented. Raw OFF is checked before unexpected active-supply HV loss during `RUNNING`; two controller regression tests pass. Stable ON requests still use debounce. See [STATE_MACHINE.md](docs/STATE_MACHINE.md).
 
-The corrected calibration workbook is integrated through **29.7 kV** for each voltage monitor. Current is estimated from voltage using separate polarity curves and labeled **I~**; actual current sensing remains unavailable. All datasets include the requested zero baseline. Pot ADC 4095 is marked saturated, and production uses strict calibration ranges. These estimates assume the recorded setup and current-limit pot at maximum.
+The corrected calibration workbook is integrated through **29.7 kV** for each voltage monitor. Current is estimated from voltage using separate polarity curves and labeled **I~**; actual current sensing remains unavailable. All datasets include the requested zero baseline. At pot ADC 4095, a marked ~ voltage estimate replaces the former saturation message; a valid live monitor in the clipped range is used when HV is on, otherwise the calibrated range midpoint is shown. Production uses strict calibration ranges for measured voltage. These estimates assume the recorded setup and current-limit pot at maximum.
 
 **Scope:** cable detection was explicitly discarded. Supply-FAULT handling remains pending verification, and the watchdog remains planned. The remaining work and controller review findings are in [TODO.md](docs/TODO.md).
 
@@ -50,7 +50,7 @@ pio run -e calibration_current
 
 The normal environment uses `espressif32`, `nodemcu-32s`, Arduino, and Seeed's Grove LCD RGB Backlight library. Diagnostic mode is selected with `DIAGNOSTIC_MODE`. See [CONFIGURATION.md](docs/CONFIGURATION.md) and [DIAGNOSTICS.md](docs/DIAGNOSTICS.md). Command semantics: [PlatformIO run](https://docs.platformio.org/en/latest/core/userguide/cmd_run.html), [PlatformIO test](https://docs.platformio.org/en/latest/core/userguide/cmd_test.html).
 
-**Latest verification:** all four ESP32 firmware environments built successfully, and PlatformIO native tests passed **48/48** (30 controller, 18 InputProcessor). The assistant has not uploaded firmware or performed physical measurements.
+**Latest verification:** all four ESP32 firmware environments built successfully, and PlatformIO native tests passed **58/58** (30 controller, 28 InputProcessor). The assistant has not uploaded firmware or performed physical measurements.
 
 ## Documentation map
 
@@ -80,4 +80,4 @@ The `calibration_voltage` and `calibration_current` PlatformIO environments run 
 
 ## Updated empirical calibration
 
-The corrected workbook is now integrated: voltage readback through 29.7 kV, voltage-based current estimates labeled `I~`, and explicit target-pot saturation at ADC 4095. All datasets have the requested zero baseline. See [CALIBRATION.md](docs/CALIBRATION.md). Current estimates assume the recorded setup and current-limit pot at maximum.
+The corrected workbook is now integrated: voltage readback through 29.7 kV, voltage-based current estimates labeled `I~`, and marked target estimates when the pot saturates at ADC 4095. All datasets have the requested zero baseline. See [CALIBRATION.md](docs/CALIBRATION.md). Current estimates assume the recorded setup and current-limit pot at maximum.
