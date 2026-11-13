@@ -38,7 +38,7 @@ backup/main debug.cpp.backup
 README_TODO.txt
 ```
 
-The earlier suggestion to split `MainApp` and `DiagnosticApp` into separate files has not been adopted. Both application branches are in one `main.cpp` under `#ifdef DIAGNOSTIC_MODE`. The backup is outside the active source directories.
+The earlier suggestion to split `MainApp` and `DiagnosticApp` into separate files has not been adopted. Diagnostic and normal-controller branches remain in main.cpp. Normal-controller operation additionally selects voltage/current calibration output with compile-time flags. The backup is outside the active source directories.
 
 ## Data contracts
 
@@ -53,7 +53,7 @@ The earlier suggestion to split `MainApp` and `DiagnosticApp` into separate file
 | `InputCalibration` | ADC windows, timer mapping, lookup tables, polarity flags, debounce |
 | `ControllerConfig` | Current source: only `useSupplyFaultInputs` |
 
-The inspected types contain no cable-polarity model or cable-detection configuration. Earlier designs did; see [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+The inspected types contain no cable-polarity model or cable-detection configuration. Earlier designs did, but the owner has explicitly discarded cable detection; see [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ## Production startup
 
@@ -77,6 +77,7 @@ then, when due: slow inputs -> display -> serial debug
 | Display | Every 100 ms when due |
 | Normal debug | Every 100 ms when due |
 | Diagnostic output | Every 250 ms when due |
+| Calibration output | Every 500 ms; three labeled ADC values, buffered serial writes, existing slow samples reused |
 
 These are cooperative scheduling periods, not guaranteed response deadlines. ADC reads, serial writes, and LCD operations take time. `now = millis()` is captured before the fast ADC acquisition; latency must be measured on hardware.
 
@@ -89,3 +90,5 @@ Target estimates use the currently selected polarity. Monitor conversion uses `m
 Timer and polarity are captured on successful validation; voltage/current pots are not captured. The firmware exposes one enable output and does not implement closed-loop voltage/current regulation or a software polarity-selection output.
 
 `deriveOutputs()` begins with disabled output and permits enable only in the two explicitly allowed cases. The hardware layer maps semantic enable to GPIO23 HIGH. See [STATE_MACHINE.md](STATE_MACHINE.md) for the transition contract and [SAFETY.md](SAFETY.md) for limits.
+
+InputProcessor now keeps estimatedCurrentUa/estimatedCurrentValid separate from measuredCurrentUa/measuredCurrentValid. Expected IDLE current uses the shared voltage pot; RUNNING estimates use the active voltage monitor. Display marks estimates I~ and prefers actual current measurement if available. Saturation/range flags affect presentation only; the state-machine control logic does not consume estimates.

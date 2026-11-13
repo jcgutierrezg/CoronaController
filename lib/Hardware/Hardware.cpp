@@ -30,6 +30,14 @@ void Hardware::begin() {
     pinMode(Pins::NEGATIVE_CURRENT_MONITOR, INPUT);
 
     analogReadResolution(12);
+
+    // Current monitor signals are small at the corona operating currents.
+    // Use the lowest attenuation only on these channels; voltage/pot ranges
+    // retain their defaults. Record current calibration points with this setting.
+    // ADC_0db has an approximately 100-950 mV specified range on original ESP32;
+    // signals below that still need validation and may require analog gain.
+    analogSetPinAttenuation(Pins::POSITIVE_CURRENT_MONITOR, ADC_0db);
+    analogSetPinAttenuation(Pins::NEGATIVE_CURRENT_MONITOR, ADC_0db);
 }
 
 RawInputs Hardware::readFastInputs() const {

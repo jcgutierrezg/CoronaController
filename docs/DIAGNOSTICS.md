@@ -46,3 +46,7 @@ enable=... posHV=... negHV=... V=... fault=...
 For further race/noise investigation, proposed logging improvements are raw switch state, both event flags, STARTING phase, raw selector ADC, and timestamps close to acquisition/output application. These are suggestions, not present logging fields.
 
 The earlier proposal to create separate MainApp and DiagnosticApp files remains optional. The current `#ifdef` selects entry-point behavior but does not imply all included libraries are absent from the other build.
+
+## Calibration output scope
+
+Use calibration_voltage or calibration_current for the simplified three-value output described in [LIVE_CALIBRATION.md](LIVE_CALIBRATION.md). The earlier combined CSV mode was replaced at the owner’s request. Only diagnostic disables controller operation; both calibration modes retain it.

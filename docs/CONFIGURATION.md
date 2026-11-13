@@ -20,7 +20,7 @@ The later PCB observation supersedes the old active-low interpretation:
 | HV_ON | HV reported OFF | HV reported ON |
 | FAULT | No fault reported | Fault reported, once decoding is enabled |
 
-The source comment saying `OFF = HIGH, ON = LOW` above the HV_ON assignment is stale. The executable assignment is already correct for active-high behavior. `InputCalibration`'s member defaults in `InputProcessor.h` still use active-low, but production overrides them in the factory above.
+The HV_ON assignment and its source comment now both reflect active-high behavior. `InputCalibration`'s member defaults in `InputProcessor.h` still use active-low, but production overrides them in the factory above.
 
 `makeControllerConfig()` currently sets:
 
@@ -42,9 +42,9 @@ Earlier advice referenced `HardwareFeatures::NEGATIVE_FAULT_WIRED` and `CABLE_DE
 | Timer ADC range | 0–4095 | 12-bit convention |
 | Timer duration | 5–120 seconds | Linear integer mapping, clamped |
 | Run-switch debounce | 50 ms | Stable ON/OFF events |
-| Voltage-monitor tables | Separate POS/NEG arrays | Recorded points through 15.3 kV |
-| Current-monitor tables | Empty `LookupTable{}` | TODO |
-| Target tables | Four assigned endpoint-only arrays | Placeholder estimates; TODO empirical calibration |
+| Voltage-monitor tables | Separate POS/NEG empirical arrays | Recorded points through 29.7 kV; strict range handling |
+| Current-monitor tables | One user-requested zero baseline each | Unavailable actual feedback; set aside for current setup |
+| Target tables | Voltage-pot-based empirical voltage/current estimates | Shared pots; polarity-specific response curves |
 
 Run-switch electrical HIGH is interpreted directly as ON; there is no independent run-switch inversion option. Unknown selector gaps produce `selectedPolarity = UNKNOWN` with `interlockClosed = true`; only the explicit open window reports the interlock open.
 
@@ -61,7 +61,7 @@ Run-switch electrical HIGH is interpreted directly as ON; there is no independen
 | `src/main.cpp` | Slow/display/debug periods | 100 ms each |
 | Same, diagnostic branch | `PRINT_INTERVAL_MS` | 250 ms |
 
-Pins are centralized in `lib/Hardware/Pins.h`; see [HARDWARE.md](HARDWARE.md). LCD colors/text are in `lib/Display/Display.cpp`; see [DISPLAY.md](DISPLAY.md). `Hardware::begin()` sets 12-bit ADC resolution but does not explicitly configure attenuation.
+Pins are centralized in `lib/Hardware/Pins.h`; see [HARDWARE.md](HARDWARE.md). LCD colors/text are in `lib/Display/Display.cpp`; see [DISPLAY.md](DISPLAY.md). `Hardware::begin()` sets 12-bit ADC resolution and ADC_0db on the two current-monitor inputs only; pots and voltage monitors retain default attenuation.
 
 ## PlatformIO environments
 
@@ -69,8 +69,20 @@ Pins are centralized in `lib/Hardware/Pins.h`; see [HARDWARE.md](HARDWARE.md). L
 |---|---|
 | `nodemcu-32s` | `espressif32`, `nodemcu-32s`, Arduino, serial 115200 |
 | `diagnostic` | Same target plus `-D DIAGNOSTIC_MODE` |
+| `calibration_voltage` | Normal controller plus `-D VOLTAGE_CALIBRATION_MODE`; three labeled voltage ADC readings |
+| `calibration_current` | Normal controller plus `-D CURRENT_CALIBRATION_MODE`; three labeled current ADC readings |
 | `native` | Native platform, Unity, `test_build_src = no`, ignores Hardware/Display, `build_src_filter = -<*>` |
 
-Both ESP32 environments depend on `https://github.com/Seeed-Studio/Grove_LCD_RGB_Backlight.git`. The platform and library reference are not version-pinned in this snapshot; record versions when establishing a reproducible release.
+All four ESP32 environments depend on `https://github.com/Seeed-Studio/Grove_LCD_RGB_Backlight.git`. The platform and library reference are not version-pinned in this snapshot; record versions when establishing a reproducible release.
 
 Use `pio test -e native` for host tests. A native firmware Build is not the test workflow. PlatformIO explains [test_build_src](https://docs.platformio.org/en/latest/projectconf/sections/env/options/test/test_build_src.html) and [source filtering](https://docs.platformio.org/en/latest/projectconf/sections/env/options/build/build_src_filter.html). The proposed split into separate application source files would require revisiting source selection; it is not needed for the current single-file `#ifdef` structure.
+
+## Added calibration environments
+
+`calibration_voltage` and `calibration_current` extend `nodemcu-32s` with `-D VOLTAGE_CALIBRATION_MODE` and `-D CURRENT_CALIBRATION_MODE`, respectively. Both run the production controller and LCD, replacing debug output with three labeled ADC readings for the selected quantity. Diagnostic, voltage calibration, and current calibration flags are mutually exclusive. See [LIVE_CALIBRATION.md](LIVE_CALIBRATION.md).
+
+## Empirical calibration integration
+
+Production now assigns separate voltage-pot-to-current target-estimate and voltage-monitor-to-current run-estimate tables. `voltagePotSaturationAdc = 4095` marks targets unavailable at saturation; `requireVoltageCalibrationRange = true` rejects voltage readings outside the recorded range. `estimatedCurrentValid` is distinct from `measuredCurrentValid`, and the LCD prefers measured current when available. See [CALIBRATION.md](CALIBRATION.md) for the active workbook data and range policy.
+
+Cable detection is outside current scope by explicit owner decision; no cable feature flag needs enabling. FAULT handling and watchdog remain planned. See [TODO.md](TODO.md).

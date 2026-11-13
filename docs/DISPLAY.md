@@ -58,6 +58,10 @@ Start rejection text covers door open, unknown polarity, and positive/negative H
 
 ## Presentation limitations
 
-Current target endpoint placeholders satisfy the table-available check and can appear as numeric, valid targets. Voltage above the last calibrated monitor point still displays the clamped 15.3 kV value. Missing current tables produce I:TODO rather than a calibrated current reading. These are implementation facts, not proof of physical output or an accepted calibration range. See [CALIBRATION.md](CALIBRATION.md).
+Active targets and voltage readback now use empirical data. Production invalidates out-of-range voltage and saturated targets. Actual current readback remains unavailable; marked I~ estimates replace it for the current workflow, and I~-- marks an unavailable estimate. These readouts are not independent protection measurements. See [CALIBRATION.md](CALIBRATION.md).
 
 The display consumes controller state; it never grants relay permission. A green screen or an HV_OFF input is not a substitute for the laboratory's physical discharge/verification procedure.
+
+## Updated calibration presentation
+
+IDLE uses `I~` for voltage-pot-based expected current. At ADC 4095 it displays `TARGET SATURATED`; voltage outside calibration shows `OUT OF CAL RANGE`. RUNNING prefers measured current, otherwise shows voltage-monitor-based estimated current using `I~` (for example `+29.7kV I~22.6uA`, 16 characters). Missing/out-of-range current estimates use `I~--`; out-of-range voltage shows `V OUT OF RANGE`. These estimates assume the same setup and maximum current-limit setting.

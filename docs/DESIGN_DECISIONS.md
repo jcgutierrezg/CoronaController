@@ -64,13 +64,13 @@ Current: 250 fast samples and 100 slow samples per channel. Revisit noise and la
 
 Decision: nonlinear monitor signals need lookup interpolation. Keep positive/negative voltage/current calibration separate. Target-pot readouts should eventually estimate actual loaded corona output rather than nominal supply range.
 
-Current: measured voltage tables through 15.3 kV; deliberate upper clamp. Current-monitor calibration remains absent. Four target tables now exist and are assigned, but only endpoint placeholders are active; their validity flags do not prove calibration. Earlier statements that all target tables were simply missing are no longer a precise description.
+Current: corrected empirical workbook integrated through 29.7 kV; requested zero baselines; strict production range flags and explicit target-pot saturation at ADC 4095. IDLE expected current uses voltage-pot ADC. RUNNING current estimation uses the active voltage monitor. I~ distinguishes estimates; actual current-monitor arrays remain unavailable with one baseline point each. Direct current readback is set aside for the present setup.
 
 ## 11. Make supply-input polarity configurable
 
 Earlier interpretation: HV_ON and FAULT were treated as active-low in examples; FAULT handling remained disabled because semantics were ambiguous.
 
-Superseding PCB finding: the owner reported both are active-high after assembly. Current `makeInputCalibration()` sets both ActiveLow flags false. An old HV_ON comment still contradicts the assignment and should be corrected. Enabling FAULT requires two additional true flags; those remain false today.
+Superseding PCB finding: the owner reported both are active-high after assembly. Current `makeInputCalibration()` sets both ActiveLow flags false. The old HV_ON comment has also been corrected. Enabling FAULT requires two additional true flags; those remain false today.
 
 Earlier advice mentioning `HardwareFeatures::NEGATIVE_FAULT_WIRED` applies to an older design and not the inspected code, which reads GPIO16 unconditionally.
 
@@ -86,7 +86,7 @@ Current: implemented; RUNNING cancellation now precedes HV-loss detection while 
 
 Earlier agreement: cable-detection architecture and fault-input support should be configurable while hardware work proceeds; watchdog hardening was postponed until behavior stabilized.
 
-Current: fault support remains configurable; watchdog is a TODO. Cable types, pin, checks, and feature switches are **absent** in the supplied source. Available history does not establish whether that removal was intentional. Restore or explicitly retire the requirement rather than describing it as implemented-but-disabled.
+Current owner-confirmed decision: discard cable detection. Its absent types/pins/checks now match scope; do not restore them as a missing feature. Keep supply-FAULT handling pending verification, and keep watchdog hardening planned.
 
 GPIO15 was only a tentative cable pin and requires reconsideration because of strapping. The current-pot boot problem was resolved in the pin allocation by using GPIO34 instead of GPIO12.
 
@@ -95,3 +95,11 @@ GPIO15 was only a tentative cable pin and requires reconsideration because of st
 Decision: state colors, fixed-width LCD updates, and a diagnostic environment are preferable to repeated LCD clearing or renaming main/debug files.
 
 Current: [DISPLAY.md](DISPLAY.md) records the exact colors/screens. `DIAGNOSTIC_MODE` selects raw-input diagnostics in main.cpp and commands enable LOW every loop. The proposed separate MainApp/DiagnosticApp source split remains optional architecture work; it is not the present layout.
+
+## 15. Simplify calibration and separate estimates from feedback
+
+The combined CSV calibration environment was replaced with separate voltage/current environments, each showing the shared target pot and positive/negative monitor ADCs with readable labels. Pots are shared, not polarity-specific. Voltage/current response curves remain supply-specific.
+
+After raw current channels still returned zero at the more sensitive ADC setting, the owner chose to use current measurements with the current-limit pot at maximum to establish voltage-based estimates. No external ADC or amplifier was commissioned. The estimate is display-only and assumes unchanged setup/current limit.
+
+Keep both 4095 observations in Excel: ADC saturation and physical maximum. Do not average them, invent another ADC key, or pretend the controller knows the knob’s remaining travel. Target lookup keeps the first unique 4095 key but marks it unavailable at saturation. Voltage-monitor-based readback retains the distinct end observations. The owner explicitly requested a zero triple at the start of every Excel dataset, with zero pairs in firmware.

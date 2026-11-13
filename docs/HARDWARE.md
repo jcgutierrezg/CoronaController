@@ -15,8 +15,8 @@ Source: `lib/Hardware/Pins.h`.
 | `CURRENT_POT` | 34 | ADC input; moved away from GPIO12 |
 | `TIMER_POT` | 14 | ADC input |
 | `POSITIVE_VOLTAGE_MONITOR` | 27 | ADC input |
-| `POSITIVE_CURRENT_MONITOR` | 25 | ADC input |
-| `NEGATIVE_VOLTAGE_MONITOR` | 26 | ADC input |
+| `POSITIVE_CURRENT_MONITOR` | 26 | ADC input |
+| `NEGATIVE_VOLTAGE_MONITOR` | 25 | ADC input |
 | `NEGATIVE_CURRENT_MONITOR` | 33 | ADC input |
 | `POSITIVE_HV_ON` | 36 | Digital input |
 | `NEGATIVE_HV_ON` | 35 | Digital input |
@@ -49,7 +49,7 @@ There is no separate digital interlock input in the current pin map. The physica
 
 ## GPIO12 boot failure
 
-The earlier current-pot connection to GPIO12 caused flash-detection/reboot behavior that depended on pot position at boot. The agreed remedy was moving it away from the strap pin; the current source uses GPIO34. GPIO15 was a tentative future cable-detector pin in earlier discussion. No cable pin or detector implementation exists in the inspected source; reassess allocation if that feature is restored.
+The earlier current-pot connection to GPIO12 caused flash-detection/reboot behavior that depended on pot position at boot. The agreed remedy was moving it away from the strap pin; the current source uses GPIO34. GPIO15 was a tentative cable-detector pin in the old discussion; cable detection has now been explicitly discarded. No allocation for it is required.
 
 ## Relay and earlier SSR failure
 
@@ -66,3 +66,5 @@ The owner subsequently confirmed a relay module. Its model, contact rating for t
 - Final selector ADC ranges, pot direction, monitor scaling, and calibration conditions.
 
 See [SAFETY.md](SAFETY.md) for boundaries of the software's feedback assumptions.
+
+The owner corrected the GPIO25/26 allocation during voltage calibration: positive current is GPIO26 and negative voltage is GPIO25. Raw current monitors still returned zero after ADC_0db was tried on GPIO26/33; weak-signal amplitude remains a working explanation, not an independently established hardware diagnosis. Current estimation now uses the voltage monitors.

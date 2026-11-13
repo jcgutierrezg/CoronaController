@@ -32,59 +32,57 @@ void InputProcessor::update(const RawInputs& raw, uint32_t now, Inputs& inputs, 
 
 void InputProcessor::updateSlow(const RawSlowInputs& raw, Inputs& inputs, Polarity measurementPolarity) {
     inputs.timerSeconds = decodeTimerSeconds(raw.timerPotAdc);
-
     inputs.targetVoltageValid = false;
     inputs.targetCurrentValid = false;
-
-    switch (inputs.selectedPolarity) {
-        case Polarity::POSITIVE:
-            inputs.targetVoltageValid = tableAvailable(calibration_.positiveVoltageTarget);
-            inputs.targetCurrentValid = tableAvailable(calibration_.positiveCurrentTarget);
-            if (inputs.targetVoltageValid)
-                inputs.targetVoltageKv = interpolateCalibration(raw.voltagePotAdc, calibration_.positiveVoltageTarget);
-            if (inputs.targetCurrentValid)
-                inputs.targetCurrentUa = interpolateCalibration(raw.currentPotAdc, calibration_.positiveCurrentTarget);
-            break;
-
-        case Polarity::NEGATIVE:
-            inputs.targetVoltageValid = tableAvailable(calibration_.negativeVoltageTarget);
-            inputs.targetCurrentValid = tableAvailable(calibration_.negativeCurrentTarget);
-            if (inputs.targetVoltageValid)
-                inputs.targetVoltageKv = interpolateCalibration(raw.voltagePotAdc, calibration_.negativeVoltageTarget);
-            if (inputs.targetCurrentValid)
-                inputs.targetCurrentUa = interpolateCalibration(raw.currentPotAdc, calibration_.negativeCurrentTarget);
-            break;
-
-        case Polarity::UNKNOWN:
-        default:
-            break;
-    }
-
+    inputs.targetCurrentIsEstimated = false;
+    inputs.targetVoltageOutOfRange = false;
+    inputs.measuredVoltageOutOfRange = false;
+    inputs.targetPotSaturated = calibration_.voltagePotSaturationAdc != 0 &&
+        raw.voltagePotAdc >= calibration_.voltagePotSaturationAdc;
     inputs.measuredVoltageValid = false;
     inputs.measuredCurrentValid = false;
+    inputs.estimatedCurrentValid = false;
 
-    switch (measurementPolarity) {
-        case Polarity::POSITIVE:
-            inputs.measuredVoltageValid = tableAvailable(calibration_.positiveVoltageMonitor);
-            inputs.measuredCurrentValid = tableAvailable(calibration_.positiveCurrentMonitor);
-            if (inputs.measuredVoltageValid)
-                inputs.measuredVoltageKv = interpolateCalibration(raw.positiveVoltageAdc, calibration_.positiveVoltageMonitor);
-            if (inputs.measuredCurrentValid)
-                inputs.measuredCurrentUa = interpolateCalibration(raw.positiveCurrentAdc, calibration_.positiveCurrentMonitor);
-            break;
+    if (inputs.selectedPolarity != Polarity::UNKNOWN) {
+        const bool positive = inputs.selectedPolarity == Polarity::POSITIVE;
+        const LookupTable& voltage = positive ? calibration_.positiveVoltageTarget : calibration_.negativeVoltageTarget;
+        const LookupTable& current = positive ? calibration_.positiveCurrentTarget : calibration_.negativeCurrentTarget;
+        const LookupTable& estimate = positive ? calibration_.positiveCurrentTargetEstimate : calibration_.negativeCurrentTargetEstimate;
+        inputs.targetVoltageOutOfRange = calibration_.requireVoltageCalibrationRange &&
+            tableAvailable(voltage) && !tableCovers(raw.voltagePotAdc, voltage);
+        inputs.targetVoltageValid = tableAvailable(voltage) && !inputs.targetPotSaturated && !inputs.targetVoltageOutOfRange;
+        if (inputs.targetVoltageValid)
+            inputs.targetVoltageKv = interpolateCalibration(raw.voltagePotAdc, voltage);
+        if (tableAvailable(estimate)) {
+            inputs.targetCurrentIsEstimated = true;
+            inputs.targetCurrentValid = !inputs.targetPotSaturated && tableCovers(raw.voltagePotAdc, estimate);
+            if (inputs.targetCurrentValid)
+                inputs.targetCurrentUa = interpolateCalibration(raw.voltagePotAdc, estimate);
+        } else {
+            inputs.targetCurrentValid = tableAvailable(current);
+            if (inputs.targetCurrentValid)
+                inputs.targetCurrentUa = interpolateCalibration(raw.currentPotAdc, current);
+        }
+    }
 
-        case Polarity::NEGATIVE:
-            inputs.measuredVoltageValid = tableAvailable(calibration_.negativeVoltageMonitor);
-            inputs.measuredCurrentValid = tableAvailable(calibration_.negativeCurrentMonitor);
-            if (inputs.measuredVoltageValid)
-                inputs.measuredVoltageKv = interpolateCalibration(raw.negativeVoltageAdc, calibration_.negativeVoltageMonitor);
-            if (inputs.measuredCurrentValid)
-                inputs.measuredCurrentUa = interpolateCalibration(raw.negativeCurrentAdc, calibration_.negativeCurrentMonitor);
-            break;
-
-        case Polarity::UNKNOWN:
-        default:
-            break;
+    if (measurementPolarity != Polarity::UNKNOWN) {
+        const bool positive = measurementPolarity == Polarity::POSITIVE;
+        const uint16_t voltageAdc = positive ? raw.positiveVoltageAdc : raw.negativeVoltageAdc;
+        const uint16_t currentAdc = positive ? raw.positiveCurrentAdc : raw.negativeCurrentAdc;
+        const LookupTable& voltage = positive ? calibration_.positiveVoltageMonitor : calibration_.negativeVoltageMonitor;
+        const LookupTable& current = positive ? calibration_.positiveCurrentMonitor : calibration_.negativeCurrentMonitor;
+        const LookupTable& estimate = positive ? calibration_.positiveCurrentEstimate : calibration_.negativeCurrentEstimate;
+        inputs.measuredVoltageOutOfRange = calibration_.requireVoltageCalibrationRange &&
+            tableAvailable(voltage) && !tableCovers(voltageAdc, voltage);
+        inputs.measuredVoltageValid = tableAvailable(voltage) && !inputs.measuredVoltageOutOfRange;
+        inputs.measuredCurrentValid = tableAvailable(current);
+        if (inputs.measuredVoltageValid)
+            inputs.measuredVoltageKv = interpolateCalibration(voltageAdc, voltage);
+        if (inputs.measuredCurrentValid)
+            inputs.measuredCurrentUa = interpolateCalibration(currentAdc, current);
+        inputs.estimatedCurrentValid = tableCovers(voltageAdc, estimate);
+        if (inputs.estimatedCurrentValid)
+            inputs.estimatedCurrentUa = interpolateCalibration(voltageAdc, estimate);
     }
 }
 
@@ -170,6 +168,11 @@ float InputProcessor::interpolateCalibration(uint16_t adc, const LookupTable& ta
     }
 
     return table.points[table.count - 1].value;
+}
+
+bool InputProcessor::tableCovers(uint16_t adc, const LookupTable& table) {
+    return tableAvailable(table) && adc >= table.points[0].adc &&
+        adc <= table.points[table.count - 1].adc;
 }
 
 bool InputProcessor::tableAvailable(const LookupTable& table) {

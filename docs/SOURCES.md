@@ -6,7 +6,7 @@ Documentation prepared on **13 November 2026**, using the owner's supplied sourc
 C:\Users\jcgg2\Workspace\CoronaController
 ```
 
-The project reference mirror's `sources/` folder was empty. No synced reference files or firmware project files were modified. Documentation and test executables were created separately in the current task's output folder. The original ZIP contained documentation only; these files have subsequently been installed in the project root and docs/ directory.
+The project reference mirror's `sources/` folder was empty. Synced reference files remain untouched. The original documentation-only ZIP was installed in this firmware project; subsequent authorized work added calibration modes, empirical tables, current estimates, tests, and zero baselines in Calibration.xlsx. The present cleanup changes documentation only before committing the current project.
 
 ## Conversation evidence
 
@@ -22,9 +22,9 @@ Conversation messages were used as evidence of design and observations, not as l
 
 Read all 15 project `.h`/`.cpp` files under src/lib/test, plus `platformio.ini` and `README_TODO.txt`. The source-specific descriptions in these docs refer to those files and their named functions. The original backup file and cached external libraries are not treated as current application implementation.
 
-The existing controller and InputProcessor suites were compiled separately with MinGW-w64 g++ 13.2.0, C++11, and cached Unity. Results: **30 + 10 passed, zero failed/ignored**. No new tests, firmware changes, uploads, energized tests, or fresh ESP32 builds were performed. See [TESTING.md](TESTING.md).
+The latest PlatformIO native run passed **30 controller + 18 InputProcessor = 48 tests**, with zero failed/ignored. All four ESP32 environments built. Eight input regressions were added during calibration integration. The earlier direct-host 40-test result is superseded. No assistant upload or physical energized measurement was performed. See [TESTING.md](TESTING.md).
 
-Hardware behavior labeled reported comes from the owner's statements or accessible historical consolidation. No oscilloscope traces, PCB schematics, supply-specific manuals, or new calibration records were examined. Configured ADC windows and table contents are source facts; their empirical accuracy is a separate question.
+Hardware behavior labeled reported comes from the owner's statements or accessible historical consolidation. Calibration.xlsx was supplied by the owner and inspected; the corrected value and every measurement were preserved while adding requested zero baselines. No oscilloscope traces, PCB schematics or supply-specific manuals were examined. Configured ADC windows and table contents are source facts; their empirical accuracy is a separate question.
 
 ## External primary references
 
@@ -36,6 +36,10 @@ These support general technical statements, not project-specific wiring or test 
 - [PlatformIO test_build_src](https://docs.platformio.org/en/latest/projectconf/sections/env/options/test/test_build_src.html) and [build_src_filter](https://docs.platformio.org/en/latest/projectconf/sections/env/options/build/build_src_filter.html): source-selection options.
 - [Spellman external interlocks](https://www.spellmanhv.com/en/Technical-Resources/High-Voltage-Reference-Manual/AN-06-just-jumper-the-external-interlock-why-you-really-shouldn-t) and [SL manual](https://www.spellmanhv.com/-/media/en/Technical-Resources/Manuals/SLMAN.pdf): general physical-protection and stored-energy guidance. Supply model identity is unknown; these are not specifications for the installed units.
 
+## Latest owner decisions
+
+Cable detection was explicitly discarded by the owner on 13 November 2026. Supply-FAULT handling remains planned pending verification; the watchdog remains planned as final hardening. Current sensing was set aside for this version in favor of voltage-based estimates, rather than confirmed as a permanent removal of the dormant interfaces. The combined CSV mode and separate-pot misunderstanding were superseded explicitly.
+
 ## Source fingerprint
 
 The following SHA-256 fingerprints identify the inspected files independently of unpinned dependency versions. They are a provenance record, not firmware signing or a release certification.
@@ -43,20 +47,21 @@ The following SHA-256 fingerprints identify the inspected files independently of
 
 | File | SHA-256 |
 |---|---|
+| `Calibration.xlsx` | `e1b2defa17fec134cb09d616404abd9721071622e4a1c25cae768fd3ab525079` |
+| `README_TODO.txt` | `18ff9215e329f624bfce73f4f62e78263d2714ed75d5af461465353012be3139` |
 | `lib/Controller/Controller.cpp` | `d7a93e1f05975961ccfefcb3ed78ae71aa3f88f59d3235d4f20c90216a1b1259` |
 | `lib/Controller/Controller.h` | `7b3b238cae7880bbeca03d03f27325611107c6ca1d7c85455a39ad4d5be4d7a2` |
-| `lib/Controller/Types.h` | `042a765893723381aa4a790a0de7003eae577b89f45cc6a7ca9acb9062847cbf` |
-| `lib/Display/Display.cpp` | `2a3d9b342722c1983b83f5d6949ccf89f9ac9bb5cd927902cd8d5a95e5108272` |
+| `lib/Controller/Types.h` | `e70536e7ab0368ea9d06c05c7577644175eb5c42500f2044d02e8345206f2b4e` |
+| `lib/Display/Display.cpp` | `baaec842523428232ac2854c8fa769a4972fedb0513b5188de6dc18345fb91f5` |
 | `lib/Display/Display.h` | `8de7f58ae655dffaf1d6382afb53345f523129b4561850bd3f368150530c2335` |
-| `lib/Hardware/Hardware.cpp` | `7abdd89af4e9e68bc5cd793e7dcdf19a060df13d6f24010f10416ef0419b8056` |
+| `lib/Hardware/Hardware.cpp` | `90767ea39256083a2892fe8032dd419fe3bb2f5d8421dce38a626f335469678a` |
 | `lib/Hardware/Hardware.h` | `bc2bba81a8e39b7013bff70c4bf664b822b5c6bf4897689afe44704021438c9b` |
-| `lib/Hardware/Pins.h` | `c49f3d25ddfc7087c7d8d8ab21c2c4c87d2658632c66a0237df3a471e75ed7b2` |
-| `lib/InputProcessor/InputProcessor.cpp` | `12c11374f6d255c389e881480156d567d44f3b055caf95620850be9489463b7d` |
-| `lib/InputProcessor/InputProcessor.h` | `cf639d05dc6f7f7dce06aecf4d8f59a3edb7b4e7e32609169eccc65e8fdbd8ad` |
+| `lib/Hardware/Pins.h` | `7c7da90fd04f8bc4b1250480f8d8a66b6654cf10ca3fea3c50afde6ee8d92c0f` |
+| `lib/InputProcessor/InputProcessor.cpp` | `40aefeda3d1e8c112fb2349a802df80185a2fdb29fc6365c51e7e047c3be92ca` |
+| `lib/InputProcessor/InputProcessor.h` | `ec888e65694857b75b362ea90815857c719c7fc6a4c6957aecbde6802cde109e` |
 | `lib/InputProcessor/RawInputs.h` | `ad675405515d288228e49cfa47a9c6735d183481bf66e79c91d0304b25f00807` |
 | `lib/InputProcessor/RawSlowInputs.h` | `88f2860d468304c0992e7bb31a48bd1023e8f42db495b865fe01f99c1be2b98f` |
-| `platformio.ini` | `7d1876a692aabd9dfa04da641b393a37bec4b510f8057d3f36d8808746db3800` |
-| `README_TODO.txt` | `ad2f9c3843d95371d63404b8ba1a8fc06cd0272ccb8d7da4d00cb026676bab3a` |
-| `src/main.cpp` | `60b48669e7860d2af42daa906a97a0837732442dcb50f754817a7f11e0c12cfc` |
+| `platformio.ini` | `6add49ccf233cbbdca75f61fd7f207265e8c35a307ead60f9de9d7686f8c8adc` |
+| `src/main.cpp` | `238a4ab219381c07ad65f0664868cfa586fea52e995506ade5d213d2579ad751` |
 | `test/test_controller/test_controller.cpp` | `8674705ad8aa70117be54184dc70991393ea0433c271c78a939a23c4f689ade3` |
-| `test/test_input_processor/test_input_processor.cpp` | `86af91fda72ad64cfea46487b7863e6607987b165791c4753e68720847f4a6b9` |
+| `test/test_input_processor/test_input_processor.cpp` | `279071c6da7c9e3cff171e380e6d911359fe9f1b71b7abf0d6729231abacd922` |

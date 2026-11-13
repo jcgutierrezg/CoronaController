@@ -16,7 +16,7 @@ The branch reported 21 failures. Helpers that set `runSwitchOn = true` but left 
 
 ## HV_ON looks inverted, or startup immediately reports HV already ON
 
-Check `src/main.cpp` / `makeInputCalibration()`, not hard-coded inversions in Controller. The assembled PCB was reported active-high; current executable setting is `hvOnActiveLow = false`. The nearby active-low comment is stale. Confirm actual pin levels with diagnostic firmware and correct interface wiring. Synthetic RawInputs defaults are HIGH, so tests constructing them for active-high semantics should explicitly set both HV_ON levels.
+Check `src/main.cpp` / `makeInputCalibration()`, not hard-coded inversions in Controller. The assembled PCB was reported active-high; current executable setting is `hvOnActiveLow = false`. The nearby comment has been corrected. Confirm actual pin levels with diagnostic firmware and correct interface wiring. Synthetic RawInputs defaults are HIGH, so tests constructing them for active-high semantics should explicitly set both HV_ON levels.
 
 ## FAULT pin changes but no controller fault occurs
 
@@ -38,9 +38,11 @@ The earlier GPIO12 assignment caused flash/boot problems. Current `CURRENT_POT` 
 
 An earlier AC-output SSR used in a DC enable circuit produced this behavior. The owner subsequently confirmed a relay module. Check actual feedback and switching hardware through the approved procedure; an input LED or disabled command does not prove an open contact. STOPPING timing out is designed to expose failure to reach HV_OFF.
 
-## Voltage plateaus at 15.3 kV; current shows TODO; target seems implausible
+## Earlier 15.3 kV ceiling / current monitors reading zero
 
-These match current calibration limits: voltage clamps at the last recorded point, measured-current tables are empty, and target tables contain endpoint placeholders. See [CALIBRATION.md](CALIBRATION.md). A numeric validity flag only proves table availability.
+The old voltage ceiling and target placeholders were superseded by the empirical workbook through 29.7 kV. Both current monitors continued reading zero after the lower-attenuation trial. Direct current readback was set aside for this setup; I~ is now a voltage-based estimate. Do not put voltage-monitor-to-current pairs into actual current-monitor tables.
+
+TARGET SATURATED at pot ADC 4095 is deliberate, not a missing lookup point. Two physical positions share that ADC code. RUNNING can still use the differing voltage-monitor ADC readings. See [CALIBRATION.md](CALIBRATION.md).
 
 ## Compiler/tests pass but IntelliSense shows red highlights
 

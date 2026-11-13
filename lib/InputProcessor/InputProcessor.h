@@ -52,6 +52,15 @@ struct InputCalibration {
     LookupTable positiveCurrentTarget;
     LookupTable negativeCurrentTarget;
 
+    // Estimates with current limit at maximum: voltage-pot ADC -> expected uA,
+    // and voltage-monitor ADC -> estimated uA. Never actual current feedback.
+    LookupTable positiveCurrentTargetEstimate;
+    LookupTable negativeCurrentTargetEstimate;
+    LookupTable positiveCurrentEstimate;
+    LookupTable negativeCurrentEstimate;
+    uint16_t voltagePotSaturationAdc = 0; // zero disables saturation handling
+    bool requireVoltageCalibrationRange = false;
+
     LookupTable positiveVoltageMonitor;
     LookupTable negativeVoltageMonitor;
     LookupTable positiveCurrentMonitor;
@@ -84,5 +93,6 @@ private:
     uint16_t decodeTimerSeconds(uint16_t adc) const;
     float interpolateCalibration(uint16_t adc, const LookupTable& table) const;
     static bool tableAvailable(const LookupTable& table);
+    static bool tableCovers(uint16_t adc, const LookupTable& table);
     static bool decodeDigitalSignal(bool pinHigh, bool activeLow);
 };

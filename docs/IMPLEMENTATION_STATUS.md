@@ -1,51 +1,30 @@
 # Implementation status and evidence
 
-Snapshot: 13 November 2026. “Source” means inspected local files; “native” means executed host tests, not hardware validation. [SOURCES.md](SOURCES.md) describes the available conversation history.
+Reviewed 13 November 2026. Source presence, owner-reported hardware behavior, passing software tests and pending physical verification are separate evidence categories.
 
-| Feature / requirement | Current implementation | Evidence / remaining work |
+| Feature | Current status | Evidence / remaining limits |
 |---|---|---|
-| PlatformIO ESP32 + native testing | Present | `platformio.ini`; native suites rerun directly with host compiler |
-| Layered modules | Present | Hardware / InputProcessor / Controller / Display |
-| Nine states and two STARTING phases | Present | Source; selected native scenarios pass |
-| Startup switch-ON and unexpected-HV faults | Present | Source + tests |
-| No automatic interlock resume | Present | Source + tests |
-| Captured timer/polarity; timer begins at HV confirmation | Present | Source + tests |
-| Voltage/current controls remain live | Not captured by controller | Source; physical wiring behavior not remeasured |
-| HV start/stop timeout | Present, 500 ms each | Source + tests; values still need measured tuning |
-| COMPLETE versus ABORTED | Present | Source + tests; ABORTED minimum 2500 ms |
-| Latched fault/reset interaction and both-HV-OFF reset | Present | Source + tests |
-| Output allow-list | Present | Source; existing test only samples safe-state coverage |
-| Energized interlock / polarity / wrong-HV checks | Present | Source + selected tests; concurrent STARTING and STOPPING gaps remain |
-| UNKNOWN polarity grace | Present, 100 ms | Source + tests; hardware tuning pending |
-| Raw/debounced switch race fix | Present | Two controller regression tests pass; raw InputProcessor regression still missing |
-| HV_ON active-high after PCB assembly | Configured in factory | Owner-reported hardware finding + source assignment; old comment stale |
-| FAULT active-high after PCB assembly | Polarity configured | Owner-reported finding; decoding/response still disabled |
-| Negative FAULT signal read | GPIO16 always read | Source; physical connection/semantics need verification |
-| `NEGATIVE_FAULT_WIRED` feature flag | Absent | Older advice and README_TODO reference do not match current code |
-| Cable detector | Absent from current code | Previously discussed; no pin/types/config/checks; removal intent unresolved |
-| Current pot moved away from GPIO12 | GPIO34 assigned | Source + historical boot-failure account |
-| Fast ADC local averaging | 250 samples | Source + owner report that 8 was insufficient; latency/PCB retest pending |
-| Slow ADC local averaging | 100 samples/channel | Source |
-| Current PCB selector windows | Configured | Open 0–200, POS 800–1600, NEG 1900–2650; measurement record absent |
-| Positive/negative voltage-monitor lookup | Present through 15.3 kV | Source labels recorded calibration; not independently remeasured |
-| Current-monitor lookup | Empty | TODO; values invalid for display |
-| Four target-pot lookups | Assigned endpoint placeholders | Numeric target-valid flags can be true; empirical calibration incomplete |
-| Correct CCW/CW pot wiring | Intended convention | Still needs physical confirmation |
-| Fixed-width RGB LCD | Present | Source; no physical display test performed |
-| Diagnostic environment | Present | Single-file conditional branch; commands disabled output each loop |
-| MainApp/DiagnosticApp split | Not present | Earlier architectural suggestion, optional |
-| Task watchdog | Not implemented | Explicit deferred-hardening TODO |
-| Continuous unexpected-HV standby guard | Not present | New source-review finding |
-| Both supplies OFF before STOPPING result | Not enforced | New source-review finding |
-| Fault deassertion required for reset/start | Not enforced | New source-review finding |
+| Layered firmware; nine states; two STARTING phases | Implemented | Source + native tests |
+| Startup switch/HV checks, no interlock resume, COMPLETE/ABORTED, latched reset | Implemented | Controller tests; edge-case reviews R01–R04 still open |
+| Timer/polarity captured; time begins at HV confirmation | Implemented | Source + tests |
+| Raw OFF before RUNNING HV-loss detection | Implemented | Two controller race tests; input-layer raw-OFF regression still missing |
+| HV_ON / FAULT active-high | Configured | Owner-reported PCB discovery; HV_ON source comment corrected |
+| Supply-FAULT handling | Disabled, retained pending verification | Both decode/response options false; GPIO39/16 are acquired |
+| Cable detection | **Discarded by owner** | Absent code reflects current scope; not a pending implementation |
+| Task watchdog | Planned, not implemented | Retained explicitly |
+| Voltage target/monitor data | Integrated | Corrected workbook, separate polarities, through 29.7 kV monitor range |
+| Zero baselines | Added by owner request | All four workbook blocks and every firmware table; distinguish from additional physical measurements |
+| Pot ADC 4095 handling | Implemented | Both observations retained in Excel; targets invalid/saturated at 4095; monitor-based RUNNING readback remains distinguishable |
+| Expected IDLE current | Implemented estimate | Voltage-pot ADC, selected polarity, I~ label |
+| RUNNING current | Implemented estimate | Active supply's voltage-monitor ADC; I~ label; assumes same geometry/load and current limit at maximum |
+| Actual current feedback | Unavailable; set aside for current setup | ADC_0db trial still read zero on both; arrays contain one zero baseline each; no hardware cause independently proved |
+| Preference for future measured current | Implemented | LCD prefers valid measured-current fields over estimates |
+| Voltage/current-estimate range flags | Implemented | Production refuses out-of-range values; estimates not used by safety/controller decisions |
+| Pin correction | Applied by owner | Positive current GPIO26; negative voltage GPIO25; positive voltage GPIO27; negative current GPIO33 |
+| Shared target pots | Correct model | One voltage pot, one current pot; not separate pots per supply |
+| Fast/slow averaging | Implemented | 250 selector / 100 per slow channel; PCB latency/noise verification remains |
+| Firmware environments | Four present and built | normal, diagnostic, calibration_voltage, calibration_current |
+| Host tests | 48 pass | 30 controller + 18 InputProcessor; not bench validation |
+| Optional app-file split/version pinning | Not required for current functionality | Optional maintenance/release improvements |
 
-## Avoid these misleading descriptions
-
-- “Everything discussed is implemented.” Cable detection is absent, watchdog is deferred, and calibration is incomplete.
-- “The fault inputs are now active and protecting the run.” Their polarity is configured active-high, but both processing/response switches are false.
-- “The target tables are missing.” They are assigned and active, but only placeholder endpoints are compiled.
-- “All current hardware has been verified.” The source, existing tests, and owner observations are different kinds of evidence.
-- “All tests passed, so the PCB is validated.” Forty existing host tests passed; their synthetic calibration is not the production PCB configuration.
-- “STOPPING or FAULT means discharged.” These are software states; feedback interpretation and stored-energy safety require separate hardware procedures.
-
-No firmware fixes were made while producing these docs. The unresolved requirements and source-review findings remain visible in [TODO.md](TODO.md).
+Remaining work is centralized in [TODO.md](TODO.md). Direct current readback was replaced for this workflow, not silently relabeled as a real measurement. Full hardware commissioning and R01–R04 remain open despite successful builds/tests.

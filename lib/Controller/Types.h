@@ -71,11 +71,17 @@ struct Inputs {
     float targetCurrentUa = 0.0f;
     float measuredVoltageKv = 0.0f;
     float measuredCurrentUa = 0.0f;
+    float estimatedCurrentUa = 0.0f;
 
     bool targetVoltageValid = false;
     bool targetCurrentValid = false;
     bool measuredVoltageValid = false;
     bool measuredCurrentValid = false;
+    bool estimatedCurrentValid = false;
+    bool targetCurrentIsEstimated = false;
+    bool targetPotSaturated = false;
+    bool targetVoltageOutOfRange = false;
+    bool measuredVoltageOutOfRange = false;
 
     PowerSupplyStatus positiveSupply;
     PowerSupplyStatus negativeSupply;

@@ -1,76 +1,48 @@
-# Calibration
+# Calibration and estimated current
 
-Status: exact active source values are reproduced below. “Recorded” means present as measured calibration data in the project; no new physical calibration was performed for these docs.
+## Current data
 
-## Selector/interlock windows
+The active empirical voltage and estimated-current tables in src/main.cpp now come from [Calibration.xlsx](../Calibration.xlsx), sheet 13-11-2026. The owner corrected the negative voltage target-pot typo to 2457 (now F15 after the baseline insertion). A user-requested 0,0,0 baseline was added to row 3 of every Excel dataset block, with matching (0, 0.0f) firmware entries. The zero entries are specified baselines, not additional independently recorded measurements.
 
-`makeInputCalibration()` in `src/main.cpp` currently sets inclusive windows:
+Workbook blocks are B:D positive voltage, F:H negative voltage, J:L positive current versus voltage setting, and N:P negative current versus voltage setting. In each block, the first column is the shared voltage-pot ADC and the second is the corresponding supply's voltage-monitor ADC. The current blocks do not contain usable current-monitor ADC readings. Multimeter voltage numbers are interpreted as kV magnitudes for this 30 kV setup; current values are µA magnitudes. Original worksheet headings/layout and all recorded measurements were retained.
 
-| ADC count | Semantic result |
-|---|---|
-| 0–200 | `interlockClosed = false`, polarity UNKNOWN |
-| 800–1600 | Closed, POSITIVE |
-| 1900–2650 | Closed, NEGATIVE |
-| All gaps/outside windows | Closed, UNKNOWN |
+| Firmware table | Points | ADC range | Units / purpose |
+|---|---:|---|---|
+| `POSITIVE_VOLTAGE_TARGET` | 19 | 0–4095 | kV |
+| `NEGATIVE_VOLTAGE_TARGET` | 19 | 0–4095 | kV |
+| `POSITIVE_VOLTAGE_MONITOR` | 20 | 0–2804 | kV |
+| `NEGATIVE_VOLTAGE_MONITOR` | 20 | 0–2809 | kV |
+| `POSITIVE_CURRENT_TARGET_ESTIMATE` | 12 | 0–4095 | µA estimate from voltage-pot ADC |
+| `NEGATIVE_CURRENT_TARGET_ESTIMATE` | 13 | 0–4095 | µA estimate from voltage-pot ADC |
+| `POSITIVE_CURRENT_ESTIMATE` | 13 | 0–2801 | µA estimate from voltage-monitor ADC |
+| `NEGATIVE_CURRENT_ESTIMATE` | 14 | 0–2807 | µA estimate from voltage-monitor ADC |
 
-Historical breadboard notes recorded roughly open 0, negative 1350–1460, positive 2660–2830, with example windows 0–100 / 1200–1600 / 2500–2950. Those are **historical**, not current production settings. The InputProcessor unit-test fixture still intentionally uses those older example windows; passing it does not validate the current PCB windows.
+The actual POSITIVE_CURRENT_MONITOR and NEGATIVE_CURRENT_MONITOR arrays each have only a zero baseline. One point is insufficient to enable measured current readback. They are separate from all current-estimate tables.
 
-The design decision is to use bounded windows and UNKNOWN gaps rather than guess a polarity with one threshold. Record new measurements for both selector positions, door-open, transitions, and relay switching on the final PCB before certifying the configured ranges.
+## Saturated pot readings
 
-## ADC acquisition and pot convention
+Excel retains both 4095 rows: first ADC saturation and physical knob maximum. A lookup cannot distinguish the positions from that ADC code. Firmware target tables include the first 4095 point only, keeping strictly increasing unique keys. At voltagePotAdc >= 4095, target values are marked unavailable and IDLE displays TARGET SATURATED rather than asserting a single output.
 
-`Hardware::begin()` requests 12-bit resolution. Fast selector acquisition averages 250 fresh samples; each slow ADC channel averages 100. Accumulation is local to the channel. There is no shared cross-channel history. The required 250 fast samples are a reported solution to the earlier relay transient, not a universal optimum or a measured response-time guarantee.
+Both end-position observations are retained in voltage-monitor-based tables because their monitor ADC readings are distinct. Actual voltage readback reaches 29.7 kV for each supply in the new data. Positive and negative running current estimates extend through 15.9 µA and 22.6 µA respectively, at their last recorded voltage-monitor points.
 
-Intended pot direction is CCW = ADC zero/minimum and CW = maximum. Hardware correction was an explicit TODO; source code alone does not confirm that every pot now follows it. No explicit ADC attenuation setting is present.
+## Current estimate integration
 
-## Timer mapping
+In IDLE, expected current comes from the voltage-pot ADC and selected polarity. During RUNNING, estimatedCurrentUa comes from the active run's voltage-monitor ADC and polarity; moving the selector does not switch the run's measurement interpretation. The LCD shows I~ for estimated current. If a calibrated actual current-monitor table becomes available later, the LCD prefers the real measurement and omits the estimate marker.
 
-ADC 0 maps to 5 s and 4095 maps to 120 s, with integer linear interpolation and endpoint clamping. At ADC 2048 the current mapping yields 62 s. Invalid ADC range configuration falls back to `secondsMinimum`.
+The current-limit pot must stay at the maximum used during collection, with the same geometry, spacing, load and other relevant conditions. The estimate does not model current-limit adjustments or detect changes in the actual load. These values are display estimates, not current feedback or inputs to protection/control decisions.
 
-The timer is refreshed on the slow path but captured into `RunConfig::durationMs` only after successful start validation. Countdown starts when HV_ON confirms the selected supply. Voltage/current pots remain live.
+## Interpolation, range and zero
 
-## Measured-voltage lookup tables
+Values are linearly interpolated between recorded points, including the requested zero baseline. No extrapolation is used for current estimates. Out-of-range estimates show I~-- when voltage remains available. Production enables strict voltage calibration ranges, so voltage outside its recorded table is unavailable instead of silently clamped. IDLE shows OUT OF CAL RANGE for an out-of-range voltage target, and RUNNING shows V OUT OF RANGE for voltage readback outside calibration.
 
-Active points in `src/main.cpp`, units kV:
+Zero ADC now returns zero voltage and estimated current. Target-pot saturation still overrides target availability at 4095. Actual current monitor validity remains false until each monitor table has at least two entries. The generic InputProcessor retains its legacy clamp behavior unless requireVoltageCalibrationRange is enabled; production enables it.
 
-| Point | Positive ADC | Positive kV | Negative ADC | Negative kV |
-|---|---:|---:|---:|---:|
-| 1 | 0 | 0.0 | 0 | 0.0 |
-| 2 | 195 | 5.0 | 203 | 5.0 |
-| 3 | 643 | 10.0 | 663 | 10.0 |
-| 4 | 1137 | 15.3 | 1189 | 15.3 |
+## Acquisition and other calibration
 
-Positive and negative supplies are deliberately calibrated separately. Monitor values are magnitudes; display polarity is provided separately.
+ADC resolution is 12 bits. Each slow channel averages 100 fresh samples, and the fast selector averages 250. Current-monitor inputs use ADC_0db as the earlier weak-signal trial; voltage monitors and pots retain default attenuation. Monitor-current ADC tables must be collected using that current-channel setting if implemented later. Voltage-based current estimates use the voltage-monitor channels and are independent of the current-channel attenuation.
 
-`interpolateCalibration()` linearly interpolates between neighboring ADC points and clamps below/above the endpoints. Thus readings above the final voltage point still display 15.3 kV, with `measuredVoltageValid = true`. This validity flag means a table exists, **not** that a reading is in the measured range. No over-range indicator or extrapolation is implemented.
+Current selector windows remain inclusive: open 0–200, positive 800–1600, negative 1900–2650. Gaps mean UNKNOWN polarity with the semantic interlock closed. The timer maps ADC 0–4095 to 5–120 seconds and is captured at successful start validation; countdown begins at HV confirmation. Pot convention is CCW minimum, CW maximum.
 
-Extend calibration above 15.3 kV if that range is used; do not interpret the clamp as a physical voltage limit.
+Use [LIVE_CALIBRATION.md](LIVE_CALIBRATION.md) for the two simple serial calibration modes. Keep data separate by polarity and record changes in setup. Rebuild and upload after changing tables. The workbook was updated and checked for preserved measurement values; no new physical measurements were performed by the assistant.
 
-## Target estimates: placeholders currently active
-
-The four arrays contain commented intermediate candidate points, but only these endpoints are compiled:
-
-| Active table | ADC 0 | ADC 4095 | Current interpretation |
-|---|---:|---:|---|
-| `POSITIVE_VOLTAGE_TARGET` | 0.0 kV | 29.8 kV | Endpoint-only estimate |
-| `NEGATIVE_VOLTAGE_TARGET` | 0.0 kV | 30.0 kV | Endpoint-only estimate |
-| `POSITIVE_CURRENT_TARGET` | 0.0 µA | 999.9 µA | Endpoint-only estimate |
-| `NEGATIVE_CURRENT_TARGET` | 0.0 µA | 999.9 µA | Endpoint-only estimate |
-
-All four are assigned to `InputCalibration`. Since two points satisfy `tableAvailable()`, their target-valid flags become true for a known selected polarity. The LCD can therefore display numeric targets despite the remaining calibration TODO. Commented points have no runtime effect and are not an approved empirical table merely because they appear in the file.
-
-The agreed final meaning is **expected real output for the loaded corona setup at that pot position**, not just a nominal fraction of a supply's 0–30 kV or 0–1 mA range. Target values are operator estimates. Measured monitor channels are the treatment readback; neither target estimation nor display conversion implements regulation.
-
-## Measured current
-
-`positiveCurrentMonitor` and `negativeCurrentMonitor` are empty `LookupTable{}` values. Their validity flags remain false. No empirically calibrated measured-current display exists yet; RUNNING normally shows voltage with `I:TODO`.
-
-## Completing a table
-
-Use the laboratory's approved measurement procedure and suitable instrumentation. For each supply and each target/monitor channel, record raw averaged ADC, independently measured physical value, units, reference instrument, PCB/firmware revision, load/geometry, and repeatability. Acquire enough points to describe nonlinear regions.
-
-Keep points in strictly increasing ADC order with no duplicate counts. Current code only checks for a non-null pointer and at least two entries; it does not validate ordering, duplicates, or empirical quality. `LookupTable::count` is an 8-bit field. Attach the array and correct count in `makeInputCalibration()`, then verify interpolation, endpoints, and presentation.
-
-For target estimates, characterize the intended operating load and both polarities separately. For voltage monitoring, retain measured provenance rather than extending the last slope without evidence. Add explicit out-of-range/uncalibrated behavior if needed; that is a review proposal, not implemented behavior.
-
-See [TESTING.md](TESTING.md) for required regressions and [TODO.md](TODO.md) for outstanding calibration tasks.
+Workbook SHA-256 at integration: e1b2defa17fec134cb09d616404abd9721071622e4a1c25cae768fd3ab525079
